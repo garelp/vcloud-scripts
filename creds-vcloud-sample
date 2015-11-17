@@ -1,0 +1,8 @@
+export vcaProfile="vca-cli profile name"
+export vcdCatalog="Private catalog"
+export vcdUser=login
+export vcdPass=password
+export vcdOrg=CUSTOMER
+export vcdHost="api.host"
+export vcdUrl="https://$vcdHost/api"
+
