@@ -30,11 +30,6 @@ fi
 #vcdHost="api1.paris2.dc.fr.access-cloud.net"
 #vcdUrl="https://$vcdHost/api"
 
-# Login to vcd with provided credentials
-#vca --profile $vcaProfile -i login $vcdUser --password $vcdPass --host $vcdHost --org $vcdOrg --version 5.5
-
-# setting the vca-cli profile:
-# set_vca_profile "$vcaProfile"
 
 OLDIFS=$IFS
 IFS=$'\n'
