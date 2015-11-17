@@ -1,0 +1,72 @@
+function check_vm_exists () {
+	# Check if a VM Exist in the current organisation
+	# $1: VM NAme
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vmStatus=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass GET "$vcdUrl/vApps/query?filter=(name==$1)" | xml2 | grep total | cut -d = -f 2)
+	return $vmStatus
+}
+
+function set_vm_custo () {
+	# $1: vmName $2: GuestCusto $3: ChangeSid $4: ChangeAdminPass
+	# value: on/off 
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1)" | xml2 | grep VMRecord | grep href | cut -d = -f 2)
+	http --session=vcloud GET "$vmUrl/guestCustomizationSection" | xml2 > /tmp/$$-custo
+	
+	if [ "$2" == "off" ]; then
+		cat /tmp/$$-custo | sed -e "s/Enabled=true/Enabled=false/" > /tmp/$$-new-custo
+		cp /tmp/$$-new-custo /tmp/$$-custo
+	fi
+	if [ "$3" == "off" ]; then 
+		cat /tmp/$$-custo | sed -e "s/ChangeSid=true/ChangeSid=false/" > /tmp/$$-new-custo
+		cp /tmp/$$-new-custo /tmp/$$-custo
+	fi
+	if [ "$4" == "off" ]; then 
+		cat /tmp/$$-custo | sed -e "s/AdminPasswordEnabled=true/AdminPasswordEnabled=false/" > /tmp/$$-new-custo
+		cp /tmp/$$-new-custo /tmp/$$-custo
+	fi
+	
+	cat /tmp/$$-custo | 2xml > /tmp/$$-custo.xml
+	
+	vmCusto=$(http --session=vcloud PUT "$vmUrl/guestCustomizationSection" 'Content-type:application/vnd.vmware.vcloud.guestCustomizationSection+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-custo.xml)
+
+	#rm -f /tmp/$$-custo /tmp/$$-new-custo /tmp/$$-custo.xml
+}
+
+function get_vm_custo () {
+        # $1: vmName
+		# returns VM customizaiont parameters
+        vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+        vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1)" | xml2 | grep VMRecord | grep href | cut -d = -f 2)
+        http --session=vcloud GET "$vmUrl/guestCustomizationSection" | xml2
+}
+
+function get_vapp_info () {
+	# $1: Vapp Name
+        vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+        http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass GET "$vcdUrl/vApps/query?filter=(name==$1)" | xml2 | grep VAppRecord | cut -d @ -f 2
+
+}
+
+function get_vm_info () {
+        # $1: vmName
+        vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+        vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1)" | xml2 | grep VMRecord | grep href | cut -d = -f 2)
+        http --session=vcloud GET "$vmUrl/" | xml2
+}
+
+function get_pool_info () {
+    	# $1: Pool Name
+    	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+		http --session=vcloud  GET  "https://api1.paris2.dc.fr.access-cloud.net/api/query?type=orgVdc&filter=(name==$1)" | xml2 | grep OrgVdcRecord | cut -d @ -f 2
+}
+
+function get_vca_profile () {
+		vca profile
+}
+
+function set_vca_profile () {
+		# $1: Profile Name
+		echo "Setting vca-cli profile to \"$1\"".
+		crudini --set $HOME/.vcarc Global profile "$1"
+}
