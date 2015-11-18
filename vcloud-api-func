@@ -8,7 +8,7 @@ function check_vm_exists () {
 
 function check_tmpl_exists () {
 	# Check if a Template Exist in the current Catalog
-	# $1: Template Name
+	# $1: Template Name to check
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 	vmStatus=$(http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&filter=(name==$1)" | xml2 | grep total | cut -d = -f 2)
 	return $vmStatus
