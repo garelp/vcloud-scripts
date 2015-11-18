@@ -37,7 +37,7 @@ IFS=$'\n'
 for line in $(cat "$INPUT")
 do
 	IFS=, read vcdPool vcdTmpl vappName vappNet vappIp vappCpu vappRam ovfPath <<< "$line"
-    echo "$vcdPool","$vcdTmpl","$vappName","$vappNet","$vappIp","$vappCpu","$vappRam","$ovfPath"
+    #echo "$vcdPool","$vcdTmpl","$vappName","$vappNet","$vappIp","$vappCpu","$vappRam","$ovfPath"
 	ovftool "$ovfPath" "vcloud://$vcdUser:$vcdPass@$vcdHost/?org=$vcdOrg&catalog=$vcdCatalog&vappTemplate=$vcdTmpl"
 done
 
