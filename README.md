@@ -6,7 +6,8 @@ Some scripts for Vcloud to ease mass import into Vcloud.
 - **Requirement:**
 
 	1. vca-vcli from Vmware.
-	2. crudini package
+	2. crudini package from pip or distro
+	3. HTTPie package from pip or distro
 
 - **Usage:**
 	1. batch-import-vm.sh "CSV File" "credential file"
