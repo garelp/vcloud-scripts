@@ -6,6 +6,14 @@ function check_vm_exists () {
 	return $vmStatus
 }
 
+function check_tmpl_exists () {
+	# Check if a Template Exist in the current Catalog
+	# $1: Template Name
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vmStatus=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass GET "$vcdUrl/query?type=vAppTemplate&filter(name==$1)" | xml2 | grep total | cut -d = -f 2)
+	return $vmStatus
+}
+
 function set_vm_custo () {
 	# $1: vmName $2: GuestCusto $3: ChangeSid $4: ChangeAdminPass
 	# value: on/off 
