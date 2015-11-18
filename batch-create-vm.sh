@@ -18,7 +18,7 @@ CREDFILE="$2"
 source vcloud-api-func
 source $CREDFILE
 
-if [ -z $vcaProfile ]; then
+if [ -z "$vcaProfile" ]; then
 	echo "Please indicate a correct creds file."
 	exit 10
 fi
