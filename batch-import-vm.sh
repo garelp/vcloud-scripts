@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#set -x
+set -x
 
 if [ $# -ne 2 ]
 then
