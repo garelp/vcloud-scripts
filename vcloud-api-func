@@ -30,7 +30,7 @@ function set_vm_custo () {
 	
 	vmCusto=$(http --session=vcloud PUT "$vmUrl/guestCustomizationSection" 'Content-type:application/vnd.vmware.vcloud.guestCustomizationSection+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-custo.xml)
 
-	#rm -f /tmp/$$-custo /tmp/$$-new-custo /tmp/$$-custo.xml
+	rm -f /tmp/$$-custo /tmp/$$-new-custo /tmp/$$-custo.xml
 }
 
 function get_vm_custo () {
