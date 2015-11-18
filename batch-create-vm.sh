@@ -47,7 +47,9 @@ do
     if [ $? -eq 0 ]; then
 		vca vapp create -a $vappName -V $vappName -c "$vcdCatalog" -t $vcdTmpl -n $vappNet --ip $vappIp --cpu $vappCpu --ram $vappRam --mode MANUAL
 		set_vm_custo $vappName on off off
-    fi
+	else
+		echo "Skipping $vappName already exists in resource pool."
+	fi
 done
 
 IFS=$OLDIFS

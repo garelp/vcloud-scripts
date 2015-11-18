@@ -38,7 +38,12 @@ for line in $(cat "$INPUT")
 do
 	IFS=, read vcdPool vcdTmpl vappName vappNet vappIp vappCpu vappRam ovfPath <<< "$line"
     #echo "$vcdPool","$vcdTmpl","$vappName","$vappNet","$vappIp","$vappCpu","$vappRam","$ovfPath"
-	ovftool "$ovfPath" "vcloud://$vcdUser:$vcdPass@$vcdHost/?org=$vcdOrg&catalog=$vcdCatalog&vappTemplate=$vcdTmpl"
+    check_tmpl_exists $vcdTmpl
+    if [ $? -eq 0 ]; then
+		ovftool "$ovfPath" "vcloud://$vcdUser:$vcdPass@$vcdHost/?org=$vcdOrg&catalog=$vcdCatalog&vappTemplate=$vcdTmpl"
+	else
+		echo "skipping $vcdTmpl already exists in catalog."
+	fi
 done
 
 IFS=$OLDIFS
