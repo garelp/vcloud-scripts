@@ -2,7 +2,7 @@ function check_vm_exists () {
 	# Check if a VM Exist in the current organisation
 	# $1: VM NAme
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	vmStatus=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass GET "$vcdUrl/vApps/query?filter=(name==$1)" | xml2 | grep total | cut -d = -f 2)
+	vmStatus=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$1)" | xml2 | grep total | cut -d = -f 2)
 	return $vmStatus
 }
 
@@ -10,7 +10,7 @@ function check_tmpl_exists () {
 	# Check if a Template Exist in the current Catalog
 	# $1: Template Name
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	vmStatus=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass GET "$vcdUrl/query?type=vAppTemplate&filter(name==$1)" | xml2 | grep total | cut -d = -f 2)
+	vmStatus=$(http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&filter=(name==$1)" | xml2 | grep total | cut -d = -f 2)
 	return $vmStatus
 }
 
