@@ -65,8 +65,15 @@ function get_vm_info () {
 
 function get_pool_info () {
     	# $1: Pool Name
+		# Return all information about the pool.
     	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-		http --session=vcloud  GET  "https://api1.paris2.dc.fr.access-cloud.net/api/query?type=orgVdc&filter=(name==$1)" | xml2 | grep OrgVdcRecord | cut -d @ -f 2
+		http --session=vcloud GET "$vcdUrl/query?type=orgVdc&filter=(name==$1)" | xml2 | grep OrgVdcRecord | cut -d @ -f 2
+}
+
+function get_pool_list () {
+	# Return the list of available pools.
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	http --session=vcloud GET "$vcdUrl/query?type=orgVdc" | xml2 | grep OrgVdcRecord | egrep 'name' | egrep -v 'Networking|Private Catalog' | cut -d = -f 2
 }
 
 function get_vca_profile () {
