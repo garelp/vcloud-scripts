@@ -91,3 +91,29 @@ function get_task_info () {
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 	http --session=vcloud GET "$vcdUrl/task/$1" | xml2 | egrep 'Task\/@status|Task\/@operation|Owner\/@name' | cut -d @ -f 2
 }
+
+function display_tasks_list () {
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	
+	for task_url in $(http --session=vcloud GET "$vcdUrl/query?type=task" | xml2 | grep "TaskRecord/@href=" | cut -d = -f 2)
+	do
+		task_id=$(basename $task_url)
+		for taskLine in $(get_task_info $task_id)
+		do
+			valueName=$(echo $taskLine | cut -d "=" -f 1)
+			valueContent=$(echo $taskLine | cut -d "=" -f 2)
+			case $valueName in
+				'status') status=$valueContent
+				;;
+				'operationName') operationName=$valueContent
+				;;
+				'operation') operation="$valueContent"
+				;;
+				'name') name=$valueContent
+				;;
+			esac
+		done
+		printf "%s - %s - %s - %s - %s\n" $task_id $status $operationName "$operation" $name
+	done
+		
+}

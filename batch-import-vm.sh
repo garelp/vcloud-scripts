@@ -36,13 +36,16 @@ IFS=$'\n'
 
 for line in $(cat "$INPUT")
 do
-	IFS=, read vcdPool vcdTmpl vappName vappNet vappIp vappCpu vappRam ovfPath <<< "$line"
-    #echo "$vcdPool","$vcdTmpl","$vappName","$vappNet","$vappIp","$vappCpu","$vappRam","$ovfPath"
-    check_tmpl_exists $vcdTmpl
-    if [ $? -eq 0 ]; then
-		ovftool --maxVirtualHardwareVersion=9 "$ovfPath" "vcloud://$vcdUser:$vcdPass@$vcdHost/?org=$vcdOrg&catalog=$vcdCatalog&vappTemplate=$vcdTmpl"
-	else
-		echo "skipping $vcdTmpl already exists in catalog."
+	if [[ $line != "#"* ]]
+	then 
+		IFS=, read vcdPool vcdTmpl vappName vappNet vappIp vappCpu vappRam ovfPath <<< "$line"
+	    #echo "$vcdPool","$vcdTmpl","$vappName","$vappNet","$vappIp","$vappCpu","$vappRam","$ovfPath"
+	    check_tmpl_exists $vcdTmpl
+	    if [ $? -eq 0 ]; then
+			ovftool --maxVirtualHardwareVersion=9 "$ovfPath" "vcloud://$vcdUser:$vcdPass@$vcdHost/?org=$vcdOrg&catalog=$vcdCatalog&vappTemplate=$vcdTmpl"
+		else
+			echo "skipping $vcdTmpl already exists in catalog."
+		fi
 	fi
 done
 

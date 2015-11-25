@@ -41,14 +41,17 @@ IFS=$'\n'
 
 for line in $(cat "$INPUT")
 do
-	IFS=, read vcdPool vcdTmpl vappName vappNet vappIp vappCpu vappRam restofline <<< "$line"
-    #echo "$vcdPool","$vcdTmpl","$vappName","$vappNet","$vappIp","$vappCpu","$vappRam"
-    check_vm_exists $vappName
-    if [ $? -eq 0 ]; then
-		vca vapp create -a $vappName -V $vappName -c "$vcdCatalog" -t $vcdTmpl -n $vappNet --ip $vappIp --cpu $vappCpu --ram $vappRam --mode MANUAL
-		set_vm_custo $vappName on off off
-	else
-		echo "Skipping $vappName already exists in resource pool."
+	if [[ $line != "#"* ]]
+	then 
+		IFS=, read vcdPool vcdTmpl vappName vappNet vappIp vappCpu vappRam ovfPath vmCusto vmGenSID vmGenPass <<< "$line"
+	    #echo "$vcdPool","$vcdTmpl","$vappName","$vappNet","$vappIp","$vappCpu","$vappRam"
+	    check_vm_exists $vappName
+	    if [ $? -eq 0 ]; then
+			vca vapp create -a $vappName -V $vappName -c "$vcdCatalog" -t $vcdTmpl -n $vappNet --ip $vappIp --cpu $vappCpu --ram $vappRam --mode MANUAL
+			set_vm_custo $vappName $vmCusto $vmGenSID $vmGenPass
+		else
+			echo "Skipping $vappName already exists in resource pool."
+		fi
 	fi
 done
 
