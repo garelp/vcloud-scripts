@@ -48,7 +48,7 @@ do
 	    check_vm_exists $vappName
 	    if [ $? -eq 0 ]; then
 			vca vapp create -a $vappName -V $vappName -c "$vcdCatalog" -t $vcdTmpl -n $vappNet --ip $vappIp --cpu $vappCpu --ram $vappRam --mode MANUAL
-			if [ $vappDesc != "" ]; then
+			if [[ $vappDesc ]]; then
 				set_vapp_desc $vappName $vappDesc
 			fi
 			set_vm_custo $vappName $vmCusto $vmGenSID $vmGenPass
