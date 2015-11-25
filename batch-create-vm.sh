@@ -43,11 +43,14 @@ for line in $(cat "$INPUT")
 do
 	if [[ $line != "#"* ]]
 	then 
-		IFS=, read vcdPool vcdTmpl vappName vappNet vappIp vappCpu vappRam ovfPath vmCusto vmGenSID vmGenPass <<< "$line"
+		IFS=, read vcdPool vcdTmpl vappName vappNet vappIp vappCpu vappRam ovfPath vmCusto vmGenSID vmGenPass vappDesc <<< "$line"
 	    #echo "$vcdPool","$vcdTmpl","$vappName","$vappNet","$vappIp","$vappCpu","$vappRam"
 	    check_vm_exists $vappName
 	    if [ $? -eq 0 ]; then
 			vca vapp create -a $vappName -V $vappName -c "$vcdCatalog" -t $vcdTmpl -n $vappNet --ip $vappIp --cpu $vappCpu --ram $vappRam --mode MANUAL
+			if [ $vappDesc != "" ]; then
+				set_vapp_desc $vappName $vappDesc
+			fi
 			set_vm_custo $vappName $vmCusto $vmGenSID $vmGenPass
 		else
 			echo "Skipping $vappName already exists in resource pool."

@@ -56,6 +56,25 @@ function get_vapp_info () {
 
 }
 
+function set_vapp_desc () {
+	# $1: Vapp Name
+	# $2: Vapp description
+	
+vappContent=$(cat <<EOF
+<?xml version="1.0" encoding="UTF-8" standalone="no"?> 
+<VApp 
+    xmlns="http://www.vmware.com/vcloud/v1.5"
+	name="$1">
+    <Description>$2</Description>
+</VApp>
+EOF)
+
+	echo "setting description to $1."
+	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
+	vmResult=$(echo $vappContent | http --session=vcloud PUT $vappUrl 'Content-type:application/vnd.vmware.vcloud.vApp+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
+	
+}
+
 function get_vm_info () {
     # $1: vmName
     vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
