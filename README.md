@@ -28,4 +28,4 @@ Some scripts for Vcloud to ease mass import into Vcloud.
 		Set of functions used into the scripts above. Can also be used directly on shell.
 	
 	4. display-pools-usage.sh:
-		Display a table of the usage for each pool.
+		Display a table of the usage for each pool. Source your credential first.
