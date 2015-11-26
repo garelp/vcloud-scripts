@@ -5,7 +5,7 @@ Some scripts for Vcloud to ease mass import into Vcloud.
 
 ## Requirement:
 
-	1. vca-vcli from Vmware. (https://github.com/vmware/vca-cli)
+	1. vca-cli from Vmware. (https://github.com/vmware/vca-cli)
 	2. crudini (apt-get install crudini)
 	3. HTTPie (apt-get install HTTPie)
 	4. xml2 (apt-get install xml2)
