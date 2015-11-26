@@ -40,6 +40,8 @@ function set_vm_custo () {
 	
 	vmCusto=$(http --session=vcloud PUT "$vmUrl/guestCustomizationSection" 'Content-type:application/vnd.vmware.vcloud.guestCustomizationSection+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-custo.xml)
 
+	sleep 1
+	
 	#rm -f /tmp/$$-custo /tmp/$$-new-custo /tmp/$$-custo.xml
 }
 
@@ -74,7 +76,7 @@ EOF)
 	echo "setting description to $1."
 	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
 	vmResult=$(echo $vappContent | http --session=vcloud PUT $vappUrl 'Content-type:application/vnd.vmware.vcloud.vApp+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
-	
+	sleep 1
 }
 
 function get_vm_info () {
