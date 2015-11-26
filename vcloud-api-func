@@ -105,6 +105,13 @@ function set_vca_profile () {
 	crudini --set $HOME/.vcarc Global profile "$1"
 }
 
+function set_vca_vdc () {
+	# $1: Profile Name
+	# $2: vdc Name
+	echo "Setting vdc $2 for profile \"$1\"".
+	crudini --set $HOME/.vcarc "Profile-$1" vdc "$2"
+}
+
 function get_task_info () {
 	#$1: Task ID
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
