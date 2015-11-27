@@ -14,6 +14,24 @@ function check_tmpl_exists () {
 	return $vmStatus
 }
 
+function wait_task_running () {
+	# wait for a tack to complete
+	# $1: taskID
+	# return 0
+	taskStatus=$(get_task_status $1)
+	while [ $taskStatus == "running" ]
+	do
+		taskStatus=$(get_task_status $1)
+	done
+}
+
+function get_task_status () {
+	# return the task status ( success, running, error...)
+	# $1: taskID
+	# resturn
+	get_task_info $1 | grep status | cut -d = -f 2
+}
+
 function set_vm_custo () {
 	# $1: vmName $2: GuestCusto $3: ChangeSid $4: ChangeAdminPass
 	# value: on/off 
@@ -36,13 +54,17 @@ function set_vm_custo () {
 	
 	cat /tmp/$$-custo | 2xml > /tmp/$$-custo.xml
 	
-	echo "Setting customization for $1."
+	echo -n "Setting customization for $1... "
 	
 	vmCusto=$(http --session=vcloud PUT "$vmUrl/guestCustomizationSection" 'Content-type:application/vnd.vmware.vcloud.guestCustomizationSection+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-custo.xml)
 
-	sleep 3
+	taskUrl=$(echo $vmCusto | xml2 | grep Task/@href | cut -d = -f 2)
+	taskID=$(basename $taskUrl)
+		
+	wait_task_running $taskID
 	
-	#rm -f /tmp/$$-custo /tmp/$$-new-custo /tmp/$$-custo.xml
+	rm -f /tmp/$$-custo /tmp/$$-new-custo /tmp/$$-custo.xml
+	echo "Done."
 }
 
 function get_vm_custo () {
