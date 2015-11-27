@@ -17,7 +17,6 @@ function check_tmpl_exists () {
 function wait_task_running () {
 	# wait for a tack to complete
 	# $1: taskID
-	# return 0
 	taskStatus=$(get_task_status $1)
 	while [ $taskStatus == "running" ]
 	do
@@ -28,7 +27,7 @@ function wait_task_running () {
 function get_task_status () {
 	# return the task status ( success, running, error...)
 	# $1: taskID
-	# resturn
+	# resturn task status
 	get_task_info $1 | grep status | cut -d = -f 2
 }
 
@@ -140,6 +139,7 @@ function set_vca_vdc () {
 
 function get_task_info () {
 	#$1: Task ID
+	# return some task info based on the task ID.
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 	http --session=vcloud GET "$vcdUrl/task/$1" | xml2 | egrep 'Task\/@status|Task\/@operation|Owner\/@name' | cut -d @ -f 2
 }
