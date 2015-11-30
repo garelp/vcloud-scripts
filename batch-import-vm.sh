@@ -38,7 +38,7 @@ for line in $(cat "$INPUT")
 do
 	if [[ $line != "#"* ]]
 	then 
-		IFS=, read vcdPool vcdTmpl vappName vmName vappNet vappIp vappCpu vappRam ovfPath <<< "$line"
+		IFS=, read vcdPool vcdTmpl vappName vmName vappNet vappIp vappCpu vappRam ovfPath restofline <<< "$line"
 		if [[ $vcdTmpl ]]; then
 		    #echo "$vcdPool","$vcdTmpl","$vappName","$vmName","$vappNet","$vappIp","$vappCpu","$vappRam","$ovfPath"
 		    check_tmpl_exists $vcdTmpl
