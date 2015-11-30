@@ -38,9 +38,9 @@ for line in $(cat "$INPUT")
 do
 	if [[ $line != "#"* ]]
 	then 
-		IFS=, read vcdPool vcdTmpl vappName vappNet vappIp vappCpu vappRam ovfPath <<< "$line"
+		IFS=, read vcdPool vcdTmpl vappName vmName vappNet vappIp vappCpu vappRam ovfPath <<< "$line"
 		if [[ $vcdTmpl ]]; then
-		    #echo "$vcdPool","$vcdTmpl","$vappName","$vappNet","$vappIp","$vappCpu","$vappRam","$ovfPath"
+		    #echo "$vcdPool","$vcdTmpl","$vappName","$vmName","$vappNet","$vappIp","$vappCpu","$vappRam","$ovfPath"
 		    check_tmpl_exists $vcdTmpl
 		    if [ $? -eq 0 ]; then
 				ovftool --maxVirtualHardwareVersion=9 "$ovfPath" "vcloud://$vcdUser:$vcdPass@$vcdHost/?org=$vcdOrg&catalog=$vcdCatalog&vappTemplate=$vcdTmpl"

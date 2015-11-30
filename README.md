@@ -16,7 +16,7 @@ Some scripts for Vcloud to ease mass import into Vcloud.
 		Import OVA/OVF from a list in a CSV file into the private catalog.
 		
 		- CSV format:
-			"Resource Pool,templateVapp,VappName,VappNetwork,VappIP,vCPU,vRAM,ova/ovf path,Guest Custo (on/off),ChangeSID (on/off),gen admin pass,description"
+			"Resource Pool,templateVapp,VappName,vmName,VappNetwork,VappIP,vCPU,vRAM,ova/ovf path,Guest Custo (on/off),ChangeSID (on/off),gen admin pass,description"
 
 		- Credential file:
 			Sample file in creds-vcloud-sample

@@ -32,10 +32,12 @@ function get_task_status () {
 }
 
 function set_vm_custo () {
-	# $1: vmName $2: GuestCusto $3: ChangeSid $4: ChangeAdminPass
+	# $1: vmName $2: GuestCusto $3: ChangeSid $4: ChangeAdminPass $5: vAppName
 	# value: on/off 
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1)" | xml2 | grep VMRecord | grep href | cut -d = -f 2)
+	#vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1)" | xml2 | grep VMRecord | grep href | cut -d = -f 2)
+	vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1;containerName==$5)" | xml2 | egrep  "vm-" | grep -v "vAppTemplate" | grep href | cut -d = -f 2)
+
 	http --session=vcloud GET "$vmUrl/guestCustomizationSection" | xml2 > /tmp/$$-custo
 	
 	if [ "$2" == "off" ]; then
@@ -68,9 +70,10 @@ function set_vm_custo () {
 
 function get_vm_custo () {
     # $1: vmName
+	# $2: vAppNAme
 	# returns VM customizaiont parameters
     vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-    vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1)" | xml2 | grep VMRecord | grep href | cut -d = -f 2)
+    vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1;containerName==$2)" | xml2 | egrep  "vm-" | grep -v "vAppTemplate" | grep href | cut -d = -f 2)
     http --session=vcloud GET "$vmUrl/guestCustomizationSection" | xml2
 }
 
@@ -141,7 +144,7 @@ function get_task_info () {
 	#$1: Task ID
 	# return some task info based on the task ID.
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	http --session=vcloud GET "$vcdUrl/task/$1" | xml2 | egrep 'Task\/@status|Task\/@operation|Owner\/@name' | cut -d @ -f 2
+	http --session=vcloud GET "$vcdUrl/task/$1" | xml2 | egrep 'Task\/@status|Task\/@operation|Owner\/@name|Task/@endTime' | cut -d @ -f 2
 }
 
 function display_tasks_list () {
@@ -163,9 +166,11 @@ function display_tasks_list () {
 				;;
 				'name') name=$valueContent
 				;;
+				'endTime') endTime=$valueContent
+				;;
 			esac
 		done
-		printf "%s - %s - %s - %s - %s\n" $task_id $status $operationName "$operation" $name
+		printf "%s - %s - %s - %s - %s - %s\n" $task_id $endTime $status $operationName "$operation" $name
 	done
 		
 }

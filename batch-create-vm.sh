@@ -43,13 +43,13 @@ for line in $(cat "$INPUT")
 do
 	if [[ $line != "#"* ]]
 	then 
-		IFS=, read vcdPool vcdTmpl vappName vappNet vappIp vappCpu vappRam ovfPath vmCusto vmGenSID vmGenPass vappDesc <<< "$line"
+		IFS=, read vcdPool vcdTmpl vappName vmName vappNet vappIp vappCpu vappRam ovfPath vmCusto vmGenSID vmGenPass vappDesc <<< "$line"
 		if [[ $vappName ]]; then
-		    #echo "$vcdPool","$vcdTmpl","$vappName","$vappNet","$vappIp","$vappCpu","$vappRam",$vmCusto,$vmGenSID,$vmGenPass,$vappDesc
+		    #echo "$vcdPool","$vcdTmpl","$vappName","$vmName","$vappNet","$vappIp","$vappCpu","$vappRam",$vmCusto,$vmGenSID,$vmGenPass,$vappDesc
 		    check_vm_exists $vappName
 		    if [ $? -eq 0 ]; then
-				vca vapp create -a $vappName -V $vappName -c "$vcdCatalog" -t $vcdTmpl -n $vappNet --ip $vappIp --cpu $vappCpu --ram $vappRam --mode MANUAL
-				set_vm_custo $vappName $vmCusto $vmGenSID $vmGenPass
+				vca vapp create -a $vappName -V $vmName -c "$vcdCatalog" -t $vcdTmpl -n $vappNet --ip $vappIp --cpu $vappCpu --ram $vappRam --mode MANUAL
+				set_vm_custo $vmName $vmCusto $vmGenSID $vmGenPass $vappName
 				if [[ $vappDesc ]]; then
 					set_vapp_desc $vappName $vappDesc
 				fi
