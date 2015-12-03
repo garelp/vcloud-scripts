@@ -31,6 +31,14 @@ function get_task_status () {
 	get_task_info $1 | grep status | cut -d = -f 2
 }
 
+function get_task_id () {
+	# $1: XML format task.
+	# return taskId
+	taskUrl=$(echo $1 | xml2 | grep Task/@href | cut -d = -f 2)
+	taskId=$(basename $taskUrl)
+	echo $taskId
+}
+
 function set_vm_custo () {
 	# $1: vmName $2: GuestCusto $3: ChangeSid $4: ChangeAdminPass $5: vAppName
 	# value: on/off 
@@ -173,4 +181,41 @@ function display_tasks_list () {
 		printf "%s - %s - %s - %s - %s - %s\n" $task_id $endTime $status $operationName "$operation" $name
 	done
 		
+}
+
+function get_vms_url () {
+	# Return all VM URL for the current VRoom/Customer ID
+	#vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	http --session=vcloud GET "$vcdUrl/query?type=vm" | xml2 | egrep  "vm-" | grep -v "vAppTemplate" | cut -d "=" -f 2
+
+}
+
+function get_vapp_list () {
+	# Return list of vApps for the current vRoom.
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+
+	http --session=vcloud GET "$vcdUrl/vApps/query" | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2
+}
+
+function get_all_vapps_features () {
+	# Return in CSV format the list of vapp features for the current vRoom.
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+
+	for vapp in $(get_vapp_list)
+	do
+		vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vapp)")
+		vappName=$vapp
+		vappCPU=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "numberOfCpus=" | cut -d = -f 2)
+		vappMEM=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "memoryAllocationMB=" | cut -d = -f 2)
+		vappDISK=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "storageKB=" | cut -d = -f 2)
+		vappUrl=$(echo $vappXMLData  | xml2 | grep VAppRecord | grep "@href=" | cut -d = -f 2)
+
+		vappXMLData=$(http --session=vcloud GET "$vappUrl")
+		vappIpAddress=$(echo $vappXMLData | xml2 | grep IpAddress= | cut -d = -f 2 | head -1)
+		vappOSName=$(echo $vappXMLData | xml2 | grep OperatingSystemSection/ovf:Description= | cut -d = -f 2)
+		
+		echo "$vappName,$vappCPU,$vappMEM,$vappDISK,$vappIpAddress,$vappOSName"
+		#echo $vappData
+	done
+
 }
