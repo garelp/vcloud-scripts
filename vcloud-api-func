@@ -205,6 +205,7 @@ function get_all_vapps_features () {
 	do
 		vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vapp)")
 		vappName=$vapp
+		vappVDCName=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "vdcName=" | cut -d = -f 2)
 		vappCPU=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "numberOfCpus=" | cut -d = -f 2)
 		vappMEM=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "memoryAllocationMB=" | cut -d = -f 2)
 		vappDISK=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "storageKB=" | cut -d = -f 2)
@@ -212,10 +213,10 @@ function get_all_vapps_features () {
 
 		vappXMLData=$(http --session=vcloud GET "$vappUrl")
 		vappIpAddress=$(echo $vappXMLData | xml2 | grep IpAddress= | cut -d = -f 2 | head -1)
+		vappNetName=$(echo $vappXMLData | xml2 | grep @network= | cut -d = -f 2 | head -1)
 		vappOSName=$(echo $vappXMLData | xml2 | grep OperatingSystemSection/ovf:Description= | cut -d = -f 2)
 		
-		echo "$vappName,$vappCPU,$vappMEM,$vappDISK,$vappIpAddress,$vappOSName"
-		#echo $vappData
+		echo "$vappName,$vappCPU,$vappMEM,$vappDISK,$vappIpAddress,$vappNetName,$vappVDCName,$vappOSName"
 	done
 
 }
