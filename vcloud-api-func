@@ -194,7 +194,7 @@ function get_vapp_list () {
 	# Return list of vApps for the current vRoom.
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
-	http --session=vcloud GET "$vcdUrl/vApps/query" | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2
+	http --session=vcloud GET "$vcdUrl/vApps/query?pageSize=200" | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2
 }
 
 function get_all_vapps_features () {
