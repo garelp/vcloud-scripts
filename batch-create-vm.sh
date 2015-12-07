@@ -48,6 +48,7 @@ do
 		    #echo "$vcdPool","$vcdTmpl","$vappName","$vmName","$vappNet","$vappIp","$vappCpu","$vappRam",$vmCusto,$vmGenSID,$vmGenPass,$vappDesc
 		    check_vm_exists $vappName
 		    if [ $? -eq 0 ]; then
+				set_vca_vdc "$vcaProfile" "$vcdPool"
 				vca vapp create -a $vappName -V $vmName -c "$vcdCatalog" -t $vcdTmpl -n $vappNet --ip $vappIp --cpu $vappCpu --ram $vappRam --mode MANUAL
 				set_vm_custo $vmName $vmCusto $vmGenSID $vmGenPass $vappName
 				if [[ $vappDesc ]]; then
