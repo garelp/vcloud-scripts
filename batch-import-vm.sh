@@ -43,6 +43,7 @@ do
 		    #echo "$vcdPool","$vcdTmpl","$vappName","$vmName","$vappNet","$vappIp","$vappCpu","$vappRam","$ovfPath"
 		    check_tmpl_exists $vcdTmpl
 		    if [ $? -eq 0 ]; then
+				set_vca_vdc "$vcaProfile" "$vcdPool"
 				ovftool --maxVirtualHardwareVersion=9 "$ovfPath" "vcloud://$vcdUser:$vcdPass@$vcdHost/?org=$vcdOrg&catalog=$vcdCatalog&vappTemplate=$vcdTmpl"
 			else
 				echo "skipping $vcdTmpl already exists in catalog."
