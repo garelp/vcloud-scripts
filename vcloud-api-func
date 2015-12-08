@@ -18,7 +18,7 @@ function wait_task_running () {
 	# wait for a tack to complete
 	# $1: taskID
 	taskStatus=$(get_task_status $1)
-	while [ $taskStatus == "running" ]
+	while [ $taskStatus == "running" ] || [ $taskStatus == "preRunning" ] 
 	do
 		taskStatus=$(get_task_status $1)
 	done
