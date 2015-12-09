@@ -26,10 +26,10 @@ fi
 OLDIFS=$IFS
 IFS=$'\n'
 
-printf "| %-20s | %-10s | %-20s | %-20s | %-20s | %-20s | %-20s | %-20s |\n" "Pool Name" "# of Vapp" "CPU Used (MHz)" "CPU Limit (MHz)" "Memory used (MB)" "Memory Limit (MB)" "Storage Used (MB)" "Storage Limit (MB)"
+printf "| %-30s | %-10s | %-20s | %-20s | %-20s | %-20s | %-20s | %-20s |\n" "Pool Name" "# of Vapp" "CPU Used (MHz)" "CPU Limit (MHz)" "Memory used (MB)" "Memory Limit (MB)" "Storage Used (MB)" "Storage Limit (MB)"
 
 # Draw a separator
-printf -v line '%*s' 175
+printf -v line '%*s' 185
 echo ${line// /-}
 
 for pool in $(get_pool_list)
@@ -57,7 +57,7 @@ do
 		esac
 	done
 	# Display the line with the pool info
-	printf "| %-20s | %-10s | %-20s | %-20s | %-20s | %-20s | %-20s | %-20s |\n" $pool $numberOfVApps $cpuAllocationMhz $cpuLimitMhz $memoryUsedMB $memoryLimitMB $storageUsedMB $storageLimitMB 
+	printf "| %-30s | %-10s | %-20s | %-20s | %-20s | %-20s | %-20s | %-20s |\n" $pool $numberOfVApps $cpuAllocationMhz $cpuLimitMhz $memoryUsedMB $memoryLimitMB $storageUsedMB $storageLimitMB 
 done
 
 IFS=$OLDIFS
