@@ -10,9 +10,11 @@ fi
 
 if [ -f "$HOME/.vcloud-scripts-config" ]
 then
-	libPath=$(crudini --get $HOME/.vcloud-scripts-config Global library_path) 
+	libPath=$(crudini --get $HOME/.vcloud-scripts-config Global library_path)
+	vcaBin=$(crudini --get $HOME/.vcloud-scripts-config Global vca_bin) 
 else
 	libPath="./"
+	vcaBin=$(type -p vca)
 fi
 
 INPUT="$1"
@@ -55,7 +57,7 @@ do
 		    check_vm_exists $vappName
 		    if [ $? -eq 0 ]; then
 				set_vca_vdc "$vcaProfile" "$vcdPool"
-				vca vapp create -a $vappName -V $vmName -c "$vcdCatalog" -t $vcdTmpl -n $vappNet --ip $vappIp --cpu $vappCpu --ram $vappRam --mode MANUAL
+				$vcaBin vapp create -a $vappName -V $vmName -c "$vcdCatalog" -t $vcdTmpl -n $vappNet --ip $vappIp --cpu $vappCpu --ram $vappRam --mode MANUAL
 				set_vm_custo $vmName $vmCusto $vmGenSID $vmGenPass $vappName
 				if [[ $vappDesc ]]; then
 					set_vapp_desc $vappName $vappDesc

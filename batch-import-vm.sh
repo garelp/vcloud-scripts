@@ -10,9 +10,11 @@ fi
 
 if [ -f "$HOME/.vcloud-scripts-config" ]
 then
-	libPath=$(crudini --get $HOME/.vcloud-scripts-config Global library_path) 
+	libPath=$(crudini --get $HOME/.vcloud-scripts-config Global library_path)
+	vcaBin=$(crudini --get $HOME/.vcloud-scripts-config Global vca_bin) 
 else
 	libPath="./"
+	vcaBin=$(type -p vca)
 fi
 
 INPUT="$1"

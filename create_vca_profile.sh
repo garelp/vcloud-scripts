@@ -10,9 +10,11 @@ fi
 
 if [ -f "$HOME/.vcloud-scripts-config" ]
 then
-	libPath=$(crudini --get $HOME/.vcloud-scripts-config Global library_path) 
+	libPath=$(crudini --get $HOME/.vcloud-scripts-config Global library_path)
+	vcaBin=$(crudini --get $HOME/.vcloud-scripts-config Global vca_bin) 
 else
 	libPath="./"
+	vcaBin=$(type -p vca)
 fi
 
 CREDFILE="$1"
@@ -26,8 +28,8 @@ if [ -z "$vcaProfile" ]; then
 	exit 10
 fi
 
-vca -p $vcaProfile -i login $vcdUser --password $vcdPass  --host $vcdHost --org $vcdOrg --version 5.5
-vca profile
+$vcaBin -p $vcaProfile -i login $vcdUser --password $vcdPass  --host $vcdHost --org $vcdOrg --version 5.5
+$vcaBin profile
 echo "**************************************************************"
 echo "**   Don't forget to set the correct VDC for this profile   **"
 echo "**                with set_vca_vdc function                 **"
