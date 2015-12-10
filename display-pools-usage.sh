@@ -2,8 +2,15 @@
 
 #set -x
 
+if [ -f "$HOME/.vcloud-scripts-config" ]
+then
+	libPath=$(crudini --get $HOME/.vcloud-scripts-config Global library_path) 
+else
+	libPath="./"
+fi
+
 # Include the vloud function library.
-source vcloud-api-func
+source $libPath/vcloud-api-func
 
 # Check if a crendial file is passed as argument.
 if [ $# -eq 1 ]; then

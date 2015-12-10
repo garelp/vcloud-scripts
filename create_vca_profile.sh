@@ -8,11 +8,17 @@ then
     exit 10
 fi
 
+if [ -f "$HOME/.vcloud-scripts-config" ]
+then
+	libPath=$(crudini --get $HOME/.vcloud-scripts-config Global library_path) 
+else
+	libPath="./"
+fi
 
 CREDFILE="$1"
 [ ! -f $CREDFILE ] && { echo "$INPUT file not found"; exit 99; }
 
-source vcloud-api-func
+source $libPath/vcloud-api-func
 source $CREDFILE
 
 if [ -z "$vcaProfile" ]; then
