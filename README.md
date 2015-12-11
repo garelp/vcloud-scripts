@@ -29,3 +29,7 @@ Some scripts for Vcloud to ease mass import into Vcloud.
 	
 	4. display-pools-usage.sh:
 		Display a table of the usage for each pool. Source your credential first.
+	
+	5. snapshot-manage.sh:
+		Usage: snapshot_manage.sh -f [create|remove|list|revert] -V [VappName]
+	
