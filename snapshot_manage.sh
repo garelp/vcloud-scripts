@@ -31,6 +31,17 @@ if [ -z "$vcdUser" ]; then
 	exit 10
 fi
 
+if [ -z "$vappName" ]; then
+	echo "Please specify the Vapp Name."
+	exit 10
+fi
+
+if [ -z "$snapFunction" ]; then
+	echo "Please specify a snapshot function."
+	exit 10
+fi
+
+
 if [ -f "$HOME/.vcloud-scripts-config" ]
 then
 	libPath=$(crudini --get $HOME/.vcloud-scripts-config Global library_path)
@@ -51,17 +62,23 @@ case $snapFunction in
 	list)
 		snapInfo=$(get_vapp_snapshot $vappName)
 		snapDate=$( echo $snapInfo | cut -d , -f 3 )
-		snapState=$( echo $snapInfo | cut -d , -f 2 )
-		snapSize=$( echo $snapInfo | cut -d , -f 1 )
-		if [ $snapState == "true" ]
+		if [ "$snapDate" ]
 		then
-			snapState="PowerOn"
+			snapState=$( echo $snapInfo | cut -d , -f 2 )
+			snapSize=$( echo $snapInfo | cut -d , -f 1 )
+			if [ $snapState == "true" ]
+			then
+				snapState="PowerOn"
+			else
+				snapState="PowerOff"
+			fi
+			printf "| %-25s | %-20s | %-20s |\n" "Date taken" "vCD Snap Size (MB)" "Vapp Status" 
+			echo "|-------------------------------------------------------------------------|"
+			printf "| %-25s | %-20s | %-20s |\n" $snapDate $(($snapSize/1024/1024)) $snapState 
 		else
-			snapState="PowerOff"
+			echo "No snapshot found for $vappName."
+			exit 1
 		fi
-		printf "| %-25s | %-20s | %-20s |\n" "Date taken" "vCD Snap Size (MB)" "Vapp Status" 
-		echo "|-------------------------------------------------------------------------|"
-		printf "| %-25s | %-20s | %-20s |\n" $snapDate $(($snapSize/1024/1024)) $snapState 
 	;;
 	revert)
 		revert_vapp_snapshot $vappName
