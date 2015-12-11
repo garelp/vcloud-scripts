@@ -18,9 +18,12 @@ function wait_task_running () {
 	# wait for a tack to complete
 	# $1: taskID
 	taskStatus=$(get_task_status $1)
+	#echo -n $taskStatus
 	while [ $taskStatus == "running" ] || [ $taskStatus == "preRunning" ] 
 	do
 		taskStatus=$(get_task_status $1)
+		#echo -n $taskStatus
+		echo -n "#"
 	done
 }
 
@@ -73,7 +76,7 @@ function set_vm_custo () {
 	wait_task_running $taskID
 	
 	rm -f /tmp/$$-custo /tmp/$$-new-custo /tmp/$$-custo.xml
-	echo "Done."
+	printf "\nDone.\n"
 }
 
 function get_vm_custo () {
@@ -225,4 +228,72 @@ function get_network_name () {
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
 	http --session=vcloud GET "$vcdUrl/query?type=orgVdcNetwork" | xml2 | grep OrgVdcNetworkRecord | grep @name | cut -d = -f 2
+}
+
+function create_vapp_snaphot () {
+	# $1: Vapp Name
+
+	vappContent=$(cat <<EOF
+	<?xml version="1.0" encoding="UTF-8"?>
+	<CreateSnapshotParams
+	   xmlns="http://www.vmware.com/vcloud/v1.5"
+	   name="Snapshot-$1">
+	   <Description>Snapshot of Vapp $1</Description>
+	</CreateSnapshotParams>
+EOF)
+
+	echo -n "Creating snapshot for $1 ... "
+	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
+	vmResult=$(echo $vappContent | http --session=vcloud POST $vappUrl/action/createSnapshot 'Content-type:application/vnd.vmware.vcloud.createSnapshotParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
+
+	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
+	taskID=$(basename $taskUrl)
+		
+	wait_task_running $taskID
+	printf "\nDone.\n"
+}
+
+function get_vapp_snapshot () {
+	# $1: Vapp Name
+	# return Snapshot info for the vapp.
+
+	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
+	vmResult=$(http --session=vcloud GET $vappUrl/snapshotSection)
+	snapSize=$( echo $vmResult | xml2 | grep @size | cut -d = -f 2 )
+	snapPowerState=$( echo $vmResult | xml2 | grep @poweredOn | cut -d = -f 2 )
+	snapDate=$( echo $vmResult | xml2 | grep @created | cut -d = -f 2 )
+	
+	echo "$snapSize,$snapPowerState,$snapDate"
+}
+
+function revert_vapp_snapshot () {
+	# $1: Vapp Name
+	# revert Vapp to the current snapshot.
+
+	echo -n "Reverting $1 to current snapshot ... "
+	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
+	vmResult=$(http --session=vcloud POST $vappUrl/action/revertToCurrentSnapshot)
+
+	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
+	taskID=$(basename $taskUrl)
+		
+	wait_task_running $taskID
+	printf "\nDone.\n"
+
+}
+
+function remove_vapp_snapshot () {
+	# $1: Vapp Name
+	# Remove the current vapp snapshot and free assiciated space.
+	
+	echo -n "Removing $1 current snapshot ... "
+	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
+	vmResult=$(http --session=vcloud POST $vappUrl/action/removeAllSnapshots)
+
+	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
+	taskID=$(basename $taskUrl)
+		
+	wait_task_running $taskID
+	printf "\nDone.\n"
+	
 }
