@@ -15,7 +15,7 @@ function check_tmpl_exists () {
 }
 
 function wait_task_running () {
-	# wait for a tack to complete
+	# wait for a task to complete
 	# $1: taskID
 	taskStatus=$(get_task_status $1)
 	#echo -n $taskStatus
@@ -296,4 +296,36 @@ function remove_vapp_snapshot () {
 	wait_task_running $taskID
 	printf "\nDone.\n"
 	
+}
+
+function get_template_list () {
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+
+	http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate" | xml2 | grep VAppTemplateRecord/@name | cut -d = -f 2
+}
+
+function get_template_info () {
+    # $1: template Name
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+
+	http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&filter=(name==$1)" | xml2 | grep VAppTemplateRecord | cut -d @ -f 2
+}
+
+function get_template_feature () {
+    # $1: template name
+    # Return: templateName,status,creation Date,StorageUsedKB
+    
+    get_template_info $1 | egrep -v "vdcName|catalogName|taskDetails" > /tmp/$$.template-values
+    source /tmp/$$.template-values
+    printf "%s,%s,%s,%s,%s\n" $vcdOrg $name $status $creationDate $storageKB
+    rm /tmp/$$.template-values
+}
+
+function get_vdc_template_list () {
+    # Returns all the templates info for the current Org.
+
+    for orgTmpl in $(get_template_list)
+    do 
+        get_template_feature $orgTmpl 
+    done
 }
