@@ -14,9 +14,9 @@ Some scripts for Vcloud to ease mass import into Vcloud.
 ## Usage:
 	1. batch-import-vm.sh "CSV File" "credential file".
 		Import OVA/OVF from a list in a CSV file into the private catalog.
-		
+
 		- CSV format:
-			"Resource Pool,templateVapp,VappName,vmName,VappNetwork,VappIP,vCPU,vRAM,ova/ovf path,Guest Custo (on/off),ChangeSID (on/off),gen admin pass,description"
+			"Resource Pool,templateVapp,VappName,vmName,VappNetwork,VappIP,vCPU,vRAM,ova/ovf path,Guest Customization (on/off),ChangeSID (on/off),gen admin pass,description"
 
 		- Credential file:
 			Sample file in creds-vcloud-sample
@@ -26,10 +26,10 @@ Some scripts for Vcloud to ease mass import into Vcloud.
 
 	3. vcloud-api-func.
 		Set of functions used into the scripts above. Can also be used directly on shell.
-	
+
 	4. display-pools-usage.sh:
 		Display a table of the usage for each pool. Source your credential first.
-	
+
 	5. snapshot-manage.sh:
 		Usage: snapshot_manage.sh -f [create|remove|list|revert] -V [VappName]
 			   snapshot_manage.sh -f list gives all the current active snapshots
