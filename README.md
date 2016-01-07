@@ -32,4 +32,4 @@ Some scripts for Vcloud to ease mass import into Vcloud.
 	
 	5. snapshot-manage.sh:
 		Usage: snapshot_manage.sh -f [create|remove|list|revert] -V [VappName]
-	
+			   snapshot_manage.sh -f list gives all the current active snapshots
