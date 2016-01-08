@@ -226,7 +226,6 @@ function get_all_vapps_features () {
 		
 		echo "$vappName,$vappCPU,$vappMEM,$vappDISK,$vappIpAddress,$vappNetName,$vappVDCName,$vappOSName"
 	done
-
 }
 
 function get_network_name () {
