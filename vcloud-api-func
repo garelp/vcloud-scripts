@@ -190,7 +190,12 @@ function get_vms_url () {
 	# Return all VM URL for the current VRoom/Customer ID
 	#vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 	http --session=vcloud GET "$vcdUrl/query?type=vm" | xml2 | egrep  "vm-" | grep -v "vAppTemplate" | cut -d "=" -f 2
+}
 
+function get_vms_list () {
+	# Return all vm available in the current VROOM.
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	http --session=vcloud GET "$vcdUrl/query?type=vm&fields=name&filter=(isVAppTemplate==false)" | xml2 | egrep "VMRecord/@name" | cut -d = -f 2
 }
 
 function get_vapp_list () {
