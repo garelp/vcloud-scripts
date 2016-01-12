@@ -188,13 +188,13 @@ function display_tasks_list () {
 function get_vms_url () {
 	# Return all VM URL for the current VRoom/Customer ID
 	#vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	http --session=vcloud GET "$vcdUrl/query?type=vm" | xml2 | egrep  "vm-" | grep -v "vAppTemplate" | cut -d "=" -f 2
+	http --session=vcloud GET "$vcdUrl/query?type=vm&pageSize=200" | xml2 | egrep  "vm-" | grep -v "vAppTemplate" | cut -d "=" -f 2
 }
 
 function get_vms_list () {
 	# Return all vm available in the current VROOM.
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	http --session=vcloud GET "$vcdUrl/query?type=vm&fields=name&filter=(isVAppTemplate==false)" | xml2 | egrep "VMRecord/@name" | cut -d = -f 2
+	http --session=vcloud GET "$vcdUrl/query?type=vm&pageSize=200&fields=name&filter=(isVAppTemplate==false)" | xml2 | egrep "VMRecord/@name" | cut -d = -f 2
 }
 
 function get_vapp_list () {
@@ -210,7 +210,7 @@ function get_all_vapps_features () {
 
 	for vapp in $(get_vapp_list)
 	do
-		vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vapp)")
+		vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vapp)&pageSize=200")
 		vappName=$vapp
 		vappVDCName=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "vdcName=" | cut -d = -f 2)
 		vappCPU=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "numberOfCpus=" | cut -d = -f 2)
@@ -304,7 +304,7 @@ function remove_vapp_snapshot () {
 function get_template_list () {
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
-	http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate" | xml2 | grep VAppTemplateRecord/@name | cut -d = -f 2
+	http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&pageSize=100" | xml2 | grep VAppTemplateRecord/@name | cut -d = -f 2
 }
 
 function get_template_info () {
