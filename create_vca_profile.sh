@@ -28,7 +28,7 @@ if [ -z "$vcaProfile" ]; then
 	exit 10
 fi
 
-$vcaBin -p $vcaProfile -i login $vcdUser --password $vcdPass  --host $vcdHost --org $vcdOrg --version 5.5
+$vcaBin -p "$vcaProfile" -i login $vcdUser --password $vcdPass  --host $vcdHost --org $vcdOrg --version 5.5
 $vcaBin profile
 echo "**************************************************************"
 echo "**   Don't forget to set the correct VDC for this profile   **"
