@@ -36,13 +36,6 @@ if [ -z "$vcaProfile" ]; then
 	exit 10
 fi
 
-#vcdCatalog="Private catalog"
-#vcdUser=login
-#vcdPass=password
-#vcdOrg=CUSTOMER_ID
-#vcdHost="api1.paris2.dc.fr.access-cloud.net"
-#vcdUrl="https://$vcdHost/api"
-
 
 OLDIFS=$IFS
 IFS=$'\n'

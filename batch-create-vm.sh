@@ -36,12 +36,6 @@ if [ -z "$vcaProfile" ]; then
 	exit 10
 fi
 
-#vcdCatalog="Private catalog"
-#vcdUser=login
-#vcdPass=password
-#vcdOrg=CUSTOMER_ID
-#vcdHost="api1.paris2.dc.fr.access-cloud.net"
-#vcdUrl="https://$vcdHost/api"
 
 # Login to vcd with provided credentials
 #vca --profile $vcaProfile -i login $vcdUser --password $vcdPass --host $vcdHost --org $vcdOrg --version 5.5
