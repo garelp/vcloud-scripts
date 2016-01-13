@@ -1,3 +1,7 @@
+###################################################################################
+##           Set of shell functions to use the VCloud Director API               ##
+###################################################################################
+
 function check_vm_exists () {
 	# Check if a VM Exist in the current organisation
 	# $1: VM NAme
