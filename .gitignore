@@ -60,3 +60,9 @@ get_all_vm_list.sh
 html_extract.py
 
 htmltable2csv.py
+
+creds-cube-uk2
+
+test-libcloud.py
+
+test-pyvcloud.py
