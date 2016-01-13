@@ -31,12 +31,6 @@ command -v crudini >/dev/null 2>&1 || { echo >&2 "I require crudini but it's not
 command -v xml2 >/dev/null 2>&1 || { echo >&2 "I require xml2 but it's not installed.  Aborting."; exit 1; }
 command -v http >/dev/null 2>&1 || { echo >&2 "I require HTTPie but it's not installed.  Aborting."; exit 1; }
 
-#vcdCatalog="Private catalog"
-#vcdUser=login
-#vcdPass=password
-#vcdOrg=CUSTOMER_ID
-#vcdHost="api1.paris2.dc.fr.access-cloud.net"
-#vcdUrl="https://$vcdHost/api"
 
 OLDIFS=$IFS
 IFS=$'\n'
