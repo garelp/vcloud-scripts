@@ -8,7 +8,6 @@ then
 	vcaBin=$(crudini --get $HOME/.vcloud-scripts-config Global vca_bin) 
 else
 	libPath="./"
-	vcaBin=$(type -p vca)
 fi
 
 # Include the vloud function library.
@@ -26,7 +25,6 @@ if [ -z "$vcdOrg" ]; then
 fi
 
 # Check availability of needed commands:
-command -v vca >/dev/null 2>&1 || { echo >&2 "I require vca-cli but it's not installed.  Aborting."; exit 1; }
 command -v crudini >/dev/null 2>&1 || { echo >&2 "I require crudini but it's not installed.  Aborting."; exit 1; }
 command -v xml2 >/dev/null 2>&1 || { echo >&2 "I require xml2 but it's not installed.  Aborting."; exit 1; }
 command -v http >/dev/null 2>&1 || { echo >&2 "I require HTTPie but it's not installed.  Aborting."; exit 1; }
