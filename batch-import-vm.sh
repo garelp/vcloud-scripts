@@ -13,6 +13,8 @@ command -v vca >/dev/null 2>&1 || { echo >&2 "I require vca-cli but it's not ins
 command -v crudini >/dev/null 2>&1 || { echo >&2 "I require crudini but it's not installed.  Aborting."; exit 1; }
 command -v xml2 >/dev/null 2>&1 || { echo >&2 "I require xml2 but it's not installed.  Aborting."; exit 1; }
 command -v http >/dev/null 2>&1 || { echo >&2 "I require HTTPie but it's not installed.  Aborting."; exit 1; }
+command -v ovftool >/dev/null 2>&1 || { echo >&2 "I require OVFTools but it's not installed.  Aborting."; exit 1; }
+
 
 if [ -f "$HOME/.vcloud-scripts-config" ]
 then
