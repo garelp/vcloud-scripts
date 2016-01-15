@@ -20,6 +20,7 @@ then
 	vcaBin=$(crudini --get $HOME/.vcloud-scripts-config Global vca_bin) 
 else
 	libPath="./"
+	vcaBin=$(command -v vca | cut -d = -f 2)
 fi
 
 INPUT="$1"
