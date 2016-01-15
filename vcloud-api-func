@@ -203,9 +203,32 @@ function get_vms_list () {
 
 function get_vapp_list () {
 	# Return list of vApps for the current vRoom.
+	# $1 = -a : displays more info about each vapp.
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-
-	http --session=vcloud GET "$vcdUrl/vApps/query?pageSize=200" | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2
+	
+	if [[ $1 ]]; then
+		if [ $1=="-a" ]; then
+			for vapp in $(get_vapp_list)
+			do
+				vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vapp)&pageSize=200")
+				vappName=$vapp
+				vappCPU=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "numberOfCpus=" | cut -d = -f 2)
+				vappMEM=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "memoryAllocationMB=" | cut -d = -f 2)
+				vappDISK=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "storageKB=" | cut -d = -f 2)
+				vappUrl=$(echo $vappXMLData  | xml2 | grep VAppRecord | grep "@href=" | cut -d = -f 2)
+				vappStatus=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "@status=" | cut -d = -f 2)
+				vappDeployed=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "@isDeployed=" | cut -d = -f 2)
+				
+				vappXMLData=$(http --session=vcloud GET "$vappUrl")
+				vappIpAddress=$(echo $vappXMLData | xml2 | grep IpAddress= | cut -d = -f 2 | head -1)
+				vappDesc=$(echo $vappXMLData | xml2 | grep VApp/Description= | cut -d = -f 2 )
+		
+				echo "$vappName,$vappCPU,$vappMEM,$vappStatus,$vappDeployed,$vappDISK,$vappIpAddress,$vappDesc"
+			done
+		fi
+	else
+		http --session=vcloud GET "$vcdUrl/vApps/query?pageSize=200" | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2
+	fi
 }
 
 function get_all_vapps_features () {
@@ -306,6 +329,8 @@ function remove_vapp_snapshot () {
 }
 
 function get_template_list () {
+	# Return the list of template name from the private catalog
+	
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
 	http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&pageSize=100" | xml2 | grep VAppTemplateRecord/@name | cut -d = -f 2
@@ -335,4 +360,59 @@ function get_vdc_template_list () {
     do 
         get_template_feature $orgTmpl 
     done
+}
+
+function power_on_vapp () {
+	# $1: Vapp Name.
+	#
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	
+	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
+	vmResult=$(http --session=vcloud POST $vappUrl/power/action/powerOn)
+	
+	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
+	taskID=$(basename $taskUrl)
+		
+	wait_task_running $taskID
+	printf "\nDone.\n"
+}
+
+function power_off_vapp () {
+	# $1: Vapp Name.
+	#
+	vcdUndeployAction='<UndeployVAppParams xmlns="http://www.vmware.com/vcloud/v1.5"><UndeployPowerAction>powerOff</UndeployPowerAction></UndeployVAppParams>'
+
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	
+	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
+	vmResult=$(http --session=vcloud POST $vappUrl/power/action/powerOff)
+	
+	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
+	taskID=$(basename $taskUrl)
+		
+	wait_task_running $taskID
+	printf "\nvapp $1 powered-off.\n"
+
+	vmResult=$(echo $vcdUndeployAction | http --session=vcloud POST $vappUrl/action/undeploy 'Content-type:application/vnd.vmware.vcloud.undeployVAppParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
+	
+	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
+	taskID=$(basename $taskUrl)
+		
+	wait_task_running $taskID
+	printf "\nvapp $1 undeployed.\n"
+}
+
+function shutdown_vapp () {
+	# $1: Vapp Name.
+	#
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	
+	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
+	vmResult=$(http --session=vcloud POST $vappUrl/power/action/shutdown)
+	
+	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
+	taskID=$(basename $taskUrl)
+		
+	wait_task_running $taskID
+	printf "\nDone.\n"
 }
