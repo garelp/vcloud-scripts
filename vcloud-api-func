@@ -441,7 +441,5 @@ EOF)
 	taskID=$(basename $taskUrl)
 		
 	wait_task_running $taskID
-	printf "\nDone.\n"
-	
-	
+	printf "\nDone.\n"	
 }
