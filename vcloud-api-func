@@ -481,3 +481,18 @@ EOF)
 	printf "\nDone.\n"	
 	
 }
+
+function delete_vapp () {
+	# Delete a vapp from vdc.
+	# $1: vapp name.
+	#
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
+	
+	vmResult=$(http --session=vcloud DELETE $vappUrl)
+	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
+	taskID=$(basename $taskUrl)
+		
+	wait_task_running $taskID
+	printf "\nDone.\n"	
+}
