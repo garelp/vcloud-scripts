@@ -378,6 +378,7 @@ function power_on_vapp () {
 }
 
 function power_off_vapp () {
+	# Power off a Vapp and undeploy it.
 	# $1: Vapp Name.
 	#
 	vcdUndeployAction='<UndeployVAppParams xmlns="http://www.vmware.com/vcloud/v1.5"><UndeployPowerAction>powerOff</UndeployPowerAction></UndeployVAppParams>'
@@ -403,6 +404,7 @@ function power_off_vapp () {
 }
 
 function shutdown_vapp () {
+	# Perform a clean shutdown of a Vapp. Need Vmware Tools.
 	# $1: Vapp Name.
 	#
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
@@ -418,8 +420,8 @@ function shutdown_vapp () {
 }
 
 function clone_vapp2tmpl () {
-	# $1: Vapp Name.
 	# Clone to the given Vapp to a template into the private Catalog
+	# $1: Vapp Name.
 	
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
@@ -442,4 +444,40 @@ EOF)
 		
 	wait_task_running $taskID
 	printf "\nDone.\n"	
+}
+
+function deploy_tmpl2vapp () {
+	# $1: template name
+	# $2: Resource Pool (Vdc)
+	# $3: VappName
+	# $4: VappDesc
+
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	
+	tmplUrl=$(get_template_info $1 | grep href= | cut -d = -f2)
+	poolUrl=$(get_pool_info "$2" | grep href= | cut -d = -f2 )
+		
+	VAppTemplateParams=$(cat <<EOF
+	<?xml version="1.0" encoding="UTF-8"?>
+	<InstantiateVAppTemplateParams
+	   xmlns="http://www.vmware.com/vcloud/v1.5"
+	   name="$3"
+	   deploy="false"
+	   powerOn="false"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:ovf="http://schemas.dmtf.org/ovf/envelope/1">
+	   <Description>$4</Description>
+	   <Source
+	      href="$tmplUrl" />
+	</InstantiateVAppTemplateParams>	
+EOF)
+	
+	vmResult=$(echo $VAppTemplateParams | http --session=vcloud POST $poolUrl/action/instantiateVAppTemplate 'Content-type:application/vnd.vmware.vcloud.instantiateVAppTemplateParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
+	
+	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
+	taskID=$(basename $taskUrl)
+		
+	wait_task_running $taskID
+	printf "\nDone.\n"	
+	
 }
