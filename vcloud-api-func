@@ -158,7 +158,10 @@ function get_task_info () {
 	#$1: Task ID
 	# return some task info based on the task ID.
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	http --session=vcloud GET "$vcdUrl/task/$1" | xml2 | egrep 'Task\/@status|Task\/@operation|Owner\/@name|Task/@endTime' | cut -d @ -f 2
+	xmlTask=$(http --session=vcloud GET "$vcdUrl/task/$1")
+	echo $xmlTask | xml2 | egrep 'Task\/@status|Task\/@operation|Owner\/@name|Task/@endTime' | cut -d @ -f 2
+	taskProgress=$(echo $xmlTask | xml2 | egrep 'Progress' | cut -d = -f2)
+	echo "Progress=$taskProgress"
 }
 
 function display_tasks_list () {
@@ -455,6 +458,7 @@ function shutdown_vapp () {
 function clone_vapp2tmpl () {
 	# Clone to the given Vapp to a template into the private Catalog
 	# $1: Vapp Name.
+	# $2: async (asynchronous cloning, return taskID)
 
 	check_tmpl_exists "$1-clone"
 	if [ $? -eq 0 ]
@@ -478,8 +482,13 @@ EOF)
 		taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 		taskID=$(basename $taskUrl)
 		
-		wait_task_running $taskID
-		printf "\nDone cloning.\n"	
+		if [ -z "$2" ]
+		then
+			wait_task_running $taskID
+			printf "\nDone cloning.\n"
+		else
+			echo $taskID
+		fi	
 	fi
 }
 
@@ -489,6 +498,7 @@ function deploy_tmpl2vapp () {
 	# $2: Resource Pool (Vdc)
 	# $3: VappName
 	# $4: VappDesc
+	# $5: async (asynchronous deployement, return taskID)
 
 	check_vm_exists "$3"
 	if [ $? -eq 0 ]
@@ -518,8 +528,13 @@ EOF)
 		taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 		taskID=$(basename $taskUrl)
 		
-		wait_task_running $taskID
-		printf "\nDeployed.\n"	
+		if [ -z "$5" ]
+		then
+			wait_task_running $taskID
+			printf "\nDeployed.\n"
+		else
+			echo $taskID
+		fi		
 	fi
 }
 
