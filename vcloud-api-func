@@ -159,7 +159,7 @@ function get_task_info () {
 	# return some task info based on the task ID.
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 	xmlTask=$(http --session=vcloud GET "$vcdUrl/task/$1")
-	echo $xmlTask | xml2 | egrep 'Task\/@status|Task\/@operation|Owner\/@name|Task/@endTime' | cut -d @ -f 2
+	echo $xmlTask | xml2 | egrep 'Task\/@status|Task\/@operation|Owner\/@name|Task/@endTime|Task/@startTime' | cut -d @ -f 2
 	taskProgress=$(echo $xmlTask | xml2 | egrep 'Progress' | cut -d = -f2)
 	echo "Progress=$taskProgress"
 }
@@ -168,6 +168,36 @@ function display_tasks_list () {
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 	
 	for task_url in $(http --session=vcloud GET "$vcdUrl/query?type=task" | xml2 | grep "TaskRecord/@href=" | cut -d = -f 2)
+	do
+		task_id=$(basename $task_url)
+		for taskLine in $(get_task_info $task_id)
+		do
+			valueName=$(echo $taskLine | cut -d "=" -f 1)
+			valueContent=$(echo $taskLine | cut -d "=" -f 2)
+			case $valueName in
+				'status') status=$valueContent
+				;;
+				'operationName') operationName=$valueContent
+				;;
+				'operation') operation="$valueContent"
+				;;
+				'name') name=$valueContent
+				;;
+				'endTime') endTime=$valueContent
+				;;
+			esac
+		done
+		printf "%s - %s - %s - %s - %s - %s\n" $task_id $endTime $status $operationName "$operation" $name
+	done
+		
+}
+
+function display_running_tasks () {
+	# Show all running tasks for the current Org.
+	#
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	
+	for task_url in $(http --session=vcloud GET "$vcdUrl/query?type=task&filter=(status==running)" | xml2 | grep "TaskRecord/@href=" | cut -d = -f 2)
 	do
 		task_id=$(basename $task_url)
 		for taskLine in $(get_task_info $task_id)
