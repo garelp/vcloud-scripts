@@ -447,6 +447,7 @@ EOF)
 }
 
 function deploy_tmpl2vapp () {
+	# Deploy a vapp from a template in private catalog without guest customization.
 	# $1: template name
 	# $2: Resource Pool (Vdc)
 	# $3: VappName
@@ -494,5 +495,20 @@ function delete_vapp () {
 	taskID=$(basename $taskUrl)
 		
 	wait_task_running $taskID
-	printf "\nDone.\n"	
+	printf "\nDone.\n"
+}
+
+function delete_template () {
+	# Delete a template from Private catalog.
+	# $1: vappTemplate Name.
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+
+	tmplUrl=$(get_template_info $1 | grep href | cut -d = -f2)
+	xmlTask=$(http --session=vcloud DELETE $tmplUrl)
+	taskUrl=$(echo $xmlTask | xml2 | grep Task/@href | cut -d = -f 2)
+	taskID=$(basename $taskUrl)
+		
+	wait_task_running $taskID
+	printf "\nDone.\n"
+
 }
