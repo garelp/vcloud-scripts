@@ -21,11 +21,13 @@ function check_tmpl_exists () {
 function wait_task_running () {
 	# wait for a task to complete
 	# $1: taskID
-	taskStatus=$(get_task_status $1)
+	
+	wt_taskID=$1
+	taskStatus=$(get_task_status $wt_taskID)
 	#echo -n $taskStatus
 	while [ $taskStatus == "running" ] || [ $taskStatus == "preRunning" ] 
 	do
-		taskStatus=$(get_task_status $1)
+		taskStatus=$(get_task_status $wt_taskID)
 		#echo -n $taskStatus
 		echo -n "#"
 	done
@@ -260,7 +262,7 @@ function get_vapp_list () {
 			done
 		fi
 	else
-		http --session=vcloud GET "$vcdUrl/vApps/query?pageSize=200" | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2
+		http --session=vcloud GET "$vcdUrl/vApps/query?pageSize=200" | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
 	fi
 }
 
@@ -297,12 +299,12 @@ function create_vapp_snaphot () {
 	# $1: Vapp Name
 
 	vappContent=$(cat <<EOF
-	<?xml version="1.0" encoding="UTF-8"?>
-	<CreateSnapshotParams
-	   xmlns="http://www.vmware.com/vcloud/v1.5"
-	   name="Snapshot-$1">
-	   <Description>Snapshot of Vapp $1</Description>
-	</CreateSnapshotParams>
+<?xml version="1.0" encoding="UTF-8"?>
+<CreateSnapshotParams
+   xmlns="http://www.vmware.com/vcloud/v1.5"
+   name="Snapshot-$1">
+   <Description>Snapshot of Vapp $1</Description>
+</CreateSnapshotParams>
 EOF)
 
 	echo -n "Creating snapshot for $1 ... "
@@ -366,7 +368,7 @@ function get_template_list () {
 	
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
-	http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&pageSize=100" | xml2 | grep VAppTemplateRecord/@name | cut -d = -f 2
+	http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&pageSize=100" | xml2 | grep VAppTemplateRecord/@name | cut -d = -f 2 | sort
 }
 
 function get_template_info () {
@@ -393,6 +395,13 @@ function get_vdc_template_list () {
     do 
         get_template_feature $orgTmpl 
     done
+}
+
+function get_template_status () {
+	# Returns template status
+	# $1: template name
+	
+	get_template_info $1 | grep status | cut -d = -f2
 }
 
 function get_vapp_power () {
@@ -489,37 +498,43 @@ function clone_vapp2tmpl () {
 	# Clone to the given Vapp to a template into the private Catalog
 	# $1: Vapp Name.
 	# $2: async (asynchronous cloning, return taskID)
+		
+	vappPowerState=$(get_vapp_power $1)
+	if [ $vappPowerState == "POWERED_OFF" ]
+	then	
+		check_tmpl_exists "$1-clone"
+		if [ $? -eq 0 ]
+		then
+			vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+			vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
 
-	check_tmpl_exists "$1-clone"
-	if [ $? -eq 0 ]
-	then
-		vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-		vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
-
-		vappCaptureParam=$(cat <<EOF
-		<?xml version="1.0" encoding="UTF-8"?>
-		<CaptureVAppParams 
-		   xmlns="http://www.vmware.com/vcloud/v1.5"
-		   name="$1-clone">
-		   <Description>Captured $1</Description>
-		   <Source href="$vappUrl" />
-		</CaptureVAppParams>
+			vappCaptureParam=$(cat <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<CaptureVAppParams 
+   xmlns="http://www.vmware.com/vcloud/v1.5"
+   name="$1-clone">
+   <Description>Captured $1</Description>
+   <Source href="$vappUrl" />
+</CaptureVAppParams>
 EOF)
 
-		vcdCatalogUrl=$(http --session=vcloud GET "$vcdUrl/catalogs/query?filter=(name==$vcdCatalog)" | xml2 | grep CatalogRecord/@href | cut -d = -f2)
-		vmResult=$(echo $vappCaptureParam | http --session=vcloud POST $vcdCatalogUrl/action/captureVApp 'Content-type:application/vnd.vmware.vcloud.captureVAppParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
+			vcdCatalogUrl=$(http --session=vcloud GET "$vcdUrl/catalogs/query?filter=(name==$vcdCatalog)" | xml2 | grep CatalogRecord/@href | cut -d = -f2)
+			vmResult=$(echo $vappCaptureParam | http --session=vcloud POST $vcdCatalogUrl/action/captureVApp 'Content-type:application/vnd.vmware.vcloud.captureVAppParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
 
-		taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
-		taskID=$(basename $taskUrl)
+			taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
+			taskID=$(basename $taskUrl)
 		
-		if [ -z "$2" ]
-		then
-			wait_task_running $taskID
-			printf "\nDone cloning.\n"
-		else
-			echo $taskID
-		fi	
-	fi
+			if [ -z "$2" ]
+			then
+				wait_task_running $taskID
+				printf "\nDone cloning.\n"
+			else
+				echo $taskID
+			fi	
+		fi
+	else
+		echo "vapp $1 is online."
+	fi	
 }
 
 function deploy_tmpl2vapp () {
@@ -530,46 +545,52 @@ function deploy_tmpl2vapp () {
 	# $4: VappDesc
 	# $5: async (asynchronous deployement, return taskID)
 
-	check_vm_exists "$3"
-	if [ $? -eq 0 ]
+	tmplStatus=$(get_template_status $1)
+	if [ $tmplStatus == "RESOLVED" ]
 	then
-		vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+		check_vm_exists "$3"
+		if [ $? -eq 0 ]
+		then
+			vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 	
-		tmplUrl=$(get_template_info $1 | grep href= | cut -d = -f2)
-		poolUrl=$(get_pool_info "$2" | grep href= | cut -d = -f2 )
+			tmplUrl=$(get_template_info $1 | grep href= | cut -d = -f2)
+			poolUrl=$(get_pool_info "$2" | grep href= | cut -d = -f2 )
 		
-		VAppTemplateParams=$(cat <<EOF
-		<?xml version="1.0" encoding="UTF-8"?>
-		<InstantiateVAppTemplateParams
-		   xmlns="http://www.vmware.com/vcloud/v1.5"
-		   name="$3"
-		   deploy="false"
-		   powerOn="false"
-		   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		   xmlns:ovf="http://schemas.dmtf.org/ovf/envelope/1">
-		   <Description>$4</Description>
-		   <Source
-		      href="$tmplUrl" />
-		</InstantiateVAppTemplateParams>	
+			VAppTemplateParams=$(cat <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<InstantiateVAppTemplateParams
+   xmlns="http://www.vmware.com/vcloud/v1.5"
+   name="$3"
+   deploy="false"
+   powerOn="false"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xmlns:ovf="http://schemas.dmtf.org/ovf/envelope/1">
+   <Description>$4</Description>
+   <Source
+      href="$tmplUrl" />
+</InstantiateVAppTemplateParams>	
 EOF)
 	
-		vmResult=$(echo $VAppTemplateParams | http --session=vcloud POST $poolUrl/action/instantiateVAppTemplate 'Content-type:application/vnd.vmware.vcloud.instantiateVAppTemplateParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
+			vmResult=$(echo $VAppTemplateParams | http --session=vcloud POST $poolUrl/action/instantiateVAppTemplate 'Content-type:application/vnd.vmware.vcloud.instantiateVAppTemplateParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
 	
-		taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
-		taskID=$(basename $taskUrl)
+			taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
+			taskID=$(basename $taskUrl)
 		
-		if [ -z "$5" ]
-		then
-			wait_task_running $taskID
-			printf "\nDeployed.\n"
-		else
-			echo $taskID
-		fi		
+			if [ -z "$5" ]
+			then
+				wait_task_running $taskID
+				printf "\nDeployed.\n"
+			else
+				echo $taskID
+			fi		
+		fi
+	else
+		echo "template $1 is not ok."
 	fi
 }
 
 function delete_vapp () {
-	# Delete a vapp from vdc.
+	# PowerOff, undeploy and Delete a vapp from vdc.
 	# $1: vapp name.
 	#
 
@@ -585,6 +606,7 @@ function delete_vapp () {
 	if [ $vappDeployState == "true" ]
 	then
 		power_off_vapp $1
+		sleep 3
 	fi
 
 	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
