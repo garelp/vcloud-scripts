@@ -245,7 +245,7 @@ function get_vapp_list () {
 		if [ $1=="-a" ]; then
 			for vapp in $(get_vapp_list)
 			do
-				vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vapp)&pageSize=200")
+				vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vapp)")
 				vappName=$vapp
 				vappCPU=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "numberOfCpus=" | cut -d = -f 2)
 				vappMEM=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "memoryAllocationMB=" | cut -d = -f 2)
@@ -262,7 +262,14 @@ function get_vapp_list () {
 			done
 		fi
 	else
-		http --session=vcloud GET "$vcdUrl/vApps/query?pageSize=200" | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
+		vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?pageSize=128")
+		vappTotal=$(echo $vappXMLData | xml2 | grep @total | cut -d = -f 2)
+		echo $vappXMLData | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
+		
+		if [ $vappTotal>128 ]; then
+			vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?page=2&pageSize=128")
+			echo $vappXMLData | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
+		fi
 	fi
 }
 
