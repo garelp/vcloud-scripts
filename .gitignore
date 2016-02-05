@@ -70,3 +70,8 @@ test-pyvcloud.py
 test_scraping/EC_paris_info.html
 
 nexus_login.txt
+/ovftool_examples.txt
+
+batch-move-vm.sh
+
+vcdshell.sh
