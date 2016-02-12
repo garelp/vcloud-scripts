@@ -266,7 +266,7 @@ function get_vapp_list () {
 		vappTotal=$(echo $vappXMLData | xml2 | grep @total | cut -d = -f 2)
 		echo $vappXMLData | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
 		
-		if [ $vappTotal>128 ]; then
+		if [ $vappTotal -gt 128 ]; then
 			vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?page=2&pageSize=128")
 			echo $vappXMLData | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
 		fi
