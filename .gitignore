@@ -77,3 +77,5 @@ batch-move-vm.sh
 vcdshell.sh
 
 creds-arkadin-hk
+
+creds-vcloud-infra-partner

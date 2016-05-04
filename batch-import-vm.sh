@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#set -x
+set -x
 
 if [ $# -ne 2 ]
 then
@@ -8,11 +8,13 @@ then
     exit 10
 fi
 
+alias ovftool='/Applications/VMware\ Fusion.app/Contents/Library/VMware\ OVF\ Tool/ovftool'
+
 # Check availability of needed commands:
 command -v crudini >/dev/null 2>&1 || { echo >&2 "I require crudini but it's not installed.  Aborting."; exit 1; }
 command -v xml2 >/dev/null 2>&1 || { echo >&2 "I require xml2 but it's not installed.  Aborting."; exit 1; }
 command -v http >/dev/null 2>&1 || { echo >&2 "I require HTTPie but it's not installed.  Aborting."; exit 1; }
-command -v ovftool >/dev/null 2>&1 || { echo >&2 "I require OVFTools but it's not installed.  Aborting."; exit 1; }
+#command -v ovftool >/dev/null 2>&1 || { echo >&2 "I require OVFTools but it's not installed.  Aborting."; exit 1; }
 
 
 if [ -f "$HOME/.vcloud-scripts-config" ]
