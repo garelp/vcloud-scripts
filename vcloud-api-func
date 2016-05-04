@@ -271,6 +271,11 @@ function get_vapp_list () {
 			vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?page=2&pageSize=128")
 			echo $vappXMLData | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
 		fi
+		if [ $vappTotal -gt 256 ]; then
+			vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?page=3&pageSize=128")
+			echo $vappXMLData | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
+		fi
+
 	fi
 }
 
@@ -280,7 +285,7 @@ function get_all_vapps_features () {
 
 	for vapp in $(get_vapp_list)
 	do
-		vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vapp)&pageSize=200")
+		vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vapp)")
 		vappName=$vapp
 		vappVDCName=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "vdcName=" | cut -d = -f 2)
 		vappCPU=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "numberOfCpus=" | cut -d = -f 2)
