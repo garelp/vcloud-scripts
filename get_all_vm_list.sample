@@ -1,0 +1,22 @@
+#!/bin/bash
+
+#set -x
+
+# Include the vloud function library.
+if [ -f "$HOME/.vcloud-scripts-config" ]
+then
+	libPath=$(crudini --get $HOME/.vcloud-scripts-config Global library_path)
+else
+	libPath="./"
+fi
+source $libPath/vcloud-api-func
+
+declare -a arr_creds=('creds-1' 'creds-2' 'creds-3' 'creds-4')
+
+printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" "Vapp Name" "# of vCPU" "vRAM Used" "Storage Used" "ip address" "Network Name" "Resource Pool" "OS Name" "Vapp Description" "VMwareTools version"
+
+for creds in "${arr_creds[@]}"
+do
+	source $creds
+	get_all_vapps_features
+done
