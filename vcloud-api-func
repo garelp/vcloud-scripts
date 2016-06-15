@@ -167,7 +167,7 @@ function get_pool_list () {
 			done
 		fi
 	else
-		http --session=vcloud GET "$vcdUrl/query?type=orgVdc" | xml2 | grep OrgVdcRecord | egrep 'name' | egrep -v 'Networking|Private Catalog' | cut -d = -f 2
+		http --session=vcloud GET "$vcdUrl/query?type=orgVdc&pageSize=200" | xml2 | grep OrgVdcRecord | egrep 'name' | egrep -v 'Networking|Private Catalog' | cut -d = -f 2
 	fi
 }
 
