@@ -133,10 +133,42 @@ function get_pool_info () {
 	http --session=vcloud GET "$vcdUrl/query?type=orgVdc&filter=(name==$1)" | xml2 | grep OrgVdcRecord | cut -d @ -f 2
 }
 
+function get_pool_info_csv () {
+	# $1: Pool Name
+	# Return all information about the pool in csv format.
+	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	poolData=$(http --session=vcloud GET "$vcdUrl/query?type=orgVdc&filter=(name==$1)")
+
+	poolName=$1
+	storageUsedMB=$(echo $poolData | xml2 | grep "@storageUsedMB" | cut -d = -f 2)
+	storageLimitMB=$(echo $poolData | xml2 | grep "@storageLimitMB" | cut -d = -f 2)
+	orgName=$(echo $poolData | xml2 | grep "@orgName" | cut -d = -f 2)
+	numberOfVApps=$(echo $poolData | xml2 | grep "@numberOfVApps" | cut -d = -f 2)
+	memoryUsedMB=$(echo $poolData | xml2 | grep "@memoryUsedMB" | cut -d = -f 2)
+	memoryLimitMB=$(echo $poolData | xml2 | grep "@memoryLimitMB" | cut -d = -f 2)
+	cpuUsedMhz=$(echo $poolData | xml2 | grep "@cpuUsedMhz" | cut -d = -f 2)
+	cpuLimitMhz=$(echo $poolData | xml2 | grep "@cpuLimitMhz" | cut -d = -f 2)
+
+	#echo $poolData | xml2
+	echo "$orgName,$poolName,$storageUsedMB,$storageLimitMB,$numberOfVApps,$memoryUsedMB,$memoryLimitMB,$cpuUsedMhz,$cpuLimitMhz"
+}
+
+
 function get_pool_list () {
 	# Return the list of available pools.
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	http --session=vcloud GET "$vcdUrl/query?type=orgVdc" | xml2 | grep OrgVdcRecord | egrep 'name' | egrep -v 'Networking|Private Catalog' | cut -d = -f 2
+
+	if [[ $1 ]]; then
+		if [ $1=="-a" ]; then
+			#echo "OrgName,pool Name,storageUsedMB,storageLimitMB,numberOfVApps,memoryUsedMB,memoryLimitMB,cpuUsedMhz,cpuLimitMhz"
+			for pool in $(get_pool_list)
+			do
+				get_pool_info_csv $pool
+			done
+		fi
+	else
+		http --session=vcloud GET "$vcdUrl/query?type=orgVdc" | xml2 | grep OrgVdcRecord | egrep 'name' | egrep -v 'Networking|Private Catalog' | cut -d = -f 2
+	fi
 }
 
 function get_vca_profile () {
