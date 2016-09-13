@@ -79,3 +79,11 @@ vcdshell.sh
 creds-arkadin-hk
 
 creds-vcloud-infra-partner
+
+vcloud-curl-example.txt
+
+creds-vcloud-infra-nboss
+
+vapp_config-flat.txt
+
+vapp_network-flat.txt

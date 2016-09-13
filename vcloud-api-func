@@ -48,6 +48,22 @@ function get_task_id () {
 	echo $taskId
 }
 
+function get_children_vm_url () {
+	# $1: vapp name
+
+	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f2)
+	http --session=vcloud "$vappUrl" | xml2 | grep "Children/Vm/@href" | cut -d = -f2
+
+}
+
+function get_children_vm_name () {
+	# $1: vapp name
+
+	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f2)
+	http --session=vcloud "$vappUrl" | xml2 | grep "Children/Vm/@name" | cut -d = -f2
+
+}
+
 function set_vm_custo () {
 	# $1: vmName $2: GuestCusto $3: ChangeSid $4: ChangeAdminPass $5: vAppName
 	# value: on/off
@@ -85,7 +101,7 @@ function set_vm_custo () {
 }
 
 function get_vm_custo () {
-    # $1: vmName
+  # $1: vmName
 	# $2: vAppNAme
 	# returns VM customizaiont parameters
     vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
@@ -678,4 +694,78 @@ function delete_template () {
 
 	wait_task_running $taskID
 	printf "\nDone.\n"
+}
+
+function get_network_config () {
+	# get Network information surch as ip range.
+	# $1: Network name
+
+	netUrl=$(http --session=vcloud GET "$vcdUrl/query?type=orgVdcNetwork&filter=(name==$1)" | xml2 | grep "OrgVdcNetworkRecord/@href=" | cut -d = -f 2)
+	echo "/NetworkConfigSection/NetworkConfig/@networkName=$1"
+	http --session=vcloud $netUrl | xml2 | grep "Configuration/IpScopes" | sed -e "s/OrgVdcNetwork/NetworkConfigSection\/NetworkConfig/g"
+	echo "/NetworkConfigSection/NetworkConfig/Configuration/ParentNetwork/@type=application/vnd.vmware.vcloud.network+xml"
+	echo "/NetworkConfigSection/NetworkConfig/Configuration/ParentNetwork/@href=$netUrl"
+	echo "/NetworkConfigSection/NetworkConfig/Configuration/ParentNetwork/@name=$1"
+	echo "/NetworkConfigSection/NetworkConfig/Configuration/FenceMode=bridged"
+}
+
+function get_vapp_network () {
+	# get Vapp network Configuration
+	# $1: Vapp Name
+
+	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
+	http --session=vcloud $vappUrl/networkConfigSection/ | xml2
+}
+
+function attach_vapp_network () {
+	# Attach a vapp to an additionnal network and set ip address to the children VM
+	# $1: Vapp Name
+	# $2: Network Name
+	# $3: ip address
+
+	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
+	get_vapp_network "$1" > /tmp/$$-vapp-net
+	echo "/NetworkConfigSection/NetworkConfig" >> /tmp/$$-vapp-net
+	get_network_config "$2" >> /tmp/$$-vapp-net
+	cat /tmp/$$-vapp-net | 2xml > /tmp/$$-vapp-net-xml
+
+	xmlTask=$(http --session=vcloud PUT "$vappUrl/networkConfigSection/" 'Content-type: application/vnd.vmware.vcloud.networkConfigSection+xml' < /tmp/$$-vapp-net-xml)
+	taskUrl=$(echo $xmlTask | xml2 | grep Task/@href | cut -d = -f 2)
+	taskID=$(basename $taskUrl)
+
+	wait_task_running $taskID
+	printf "\nDone adding network.\n"
+	rm -f /tmp/$$-vapp-net-xml /tmp/$$-vapp-net
+
+	vmName=$(get_children_vm_name $1)
+	attach_vm_network $vmName "$2" $3
+
+}
+
+function attach_vm_network () {
+	# Set ip address to the VM
+	# $1: Vm name
+	# $2: Network name
+	# $3: ip address
+
+	vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1;isVAppTemplate==false)" | xml2 | grep "VMRecord/@href" | cut -d = -f 2)
+	http --session=vcloud GET "$vmUrl/networkConnectionSection/" | xml2 | grep -v "/NetworkConnectionSection/Link/" > /tmp/$$-vm-net
+	echo "/NetworkConnectionSection/NetworkConnection" >> /tmp/$$-vm-net
+	echo "/NetworkConnectionSection/NetworkConnection/@needsCustomization=false" >> /tmp/$$-vm-net
+	echo "/NetworkConnectionSection/NetworkConnection/@network=$2" >> /tmp/$$-vm-net
+	echo "/NetworkConnectionSection/NetworkConnection/NetworkConnectionIndex=1" >> /tmp/$$-vm-net
+	echo "/NetworkConnectionSection/NetworkConnection/IpAddress=$3" >> /tmp/$$-vm-net
+	echo "/NetworkConnectionSection/NetworkConnection/IsConnected=true" >> /tmp/$$-vm-net
+	echo "/NetworkConnectionSection/NetworkConnection/IpAddressAllocationMode=MANUAL" >> /tmp/$$-vm-net
+
+	cat /tmp/$$-vm-net | 2xml > /tmp/$$-vm-net-xml
+
+	xmlTask=$(http --session=vcloud PUT "$vmUrl/networkConnectionSection/" 'Content-type: application/vnd.vmware.vcloud.networkConnectionSection+xml' < /tmp/$$-vm-net-xml)
+	taskUrl=$(echo $xmlTask | xml2 | grep Task/@href | cut -d = -f 2)
+	taskID=$(basename $taskUrl)
+
+	wait_task_running $taskID
+	printf "\nDone attaching vm to network.\n"
+
+	rm -f /tmp/$$-vm-net /tmp/$$-vm-net-xml
 }
