@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+#set -x
 
 if [ $# -ne 2 ]
 then
@@ -20,7 +20,7 @@ command -v http >/dev/null 2>&1 || { echo >&2 "I require HTTPie but it's not ins
 if [ -f "$HOME/.vcloud-scripts-config" ]
 then
 	libPath=$(crudini --get $HOME/.vcloud-scripts-config Global library_path)
-	vcaBin=$(crudini --get $HOME/.vcloud-scripts-config Global vca_bin) 
+	vcaBin=$(crudini --get $HOME/.vcloud-scripts-config Global vca_bin)
 else
 	libPath="./"
 	vcaBin=$(command -v vca | cut -d = -f 2)
@@ -47,7 +47,7 @@ IFS=$'\n'
 for line in $(cat "$INPUT")
 do
 	if [[ $line != "#"* ]]
-	then 
+	then
 		IFS=, read vcdPool vcdTmpl vappName vmName vappNet vappIp vappCpu vappRam ovfPath restofline <<< "$line"
 		if [[ $vcdTmpl ]]; then
 		    #echo "$vcdPool","$vcdTmpl","$vappName","$vmName","$vappNet","$vappIp","$vappCpu","$vappRam","$ovfPath"

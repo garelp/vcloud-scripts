@@ -65,7 +65,7 @@ function get_children_vm_name () {
 }
 
 function set_vm_custo () {
-	# $1: vmName $2: GuestCusto $3: ChangeSid $4: ChangeAdminPass $5: vAppName
+	# $1: vmName $2: GuestCusto $3: ChangeSid $4: ChangeAdminPass $5: vAppName $6: AdminPassword
 	# value: on/off
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 	vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1;containerName==$5)" | xml2 | egrep  "vm-" | grep -v "vAppTemplate" | grep href | cut -d = -f 2)
@@ -83,21 +83,40 @@ function set_vm_custo () {
 	if [ "$4" == "off" ]; then
 		cat /tmp/$$-custo | sed -e "s/AdminPasswordEnabled=true/AdminPasswordEnabled=false/" > /tmp/$$-new-custo
 		cp /tmp/$$-new-custo /tmp/$$-custo
+	else
+		if [[ $6 ]]; then
+			# if a password is defined, set it
+			cat /tmp/$$-custo  | grep -v "GuestCustomizationSection/Link" | sed -e "s/AdminPasswordAuto=true/AdminPasswordAuto=false/" > /tmp/$$-new-custo
+			echo "/GuestCustomizationSection/AdminPassword=\"$6\"" >> /tmp/$$-new-custo
+			#echo "/GuestCustomizationSection/AdminPassword/@AdminPassword=" >> /tmp/$$-new-custo
+			echo "/GuestCustomizationSection/Link/@rel=edit" >> /tmp/$$-new-custo
+			echo "/GuestCustomizationSection/Link/@type=application/vnd.vmware.vcloud.guestCustomizationSection+xml" >> /tmp/$$-new-custo
+			echo "/GuestCustomizationSection/Link/@href=$vmUrl/guestCustomizationSection/" >> /tmp/$$-new-custo
+			cp /tmp/$$-new-custo /tmp/$$-custo
+		fi
 	fi
 
 	cat /tmp/$$-custo | 2xml > /tmp/$$-custo.xml
 
 	echo -n "Setting customization for $1... "
 
-	vmCusto=$(http --session=vcloud PUT "$vmUrl/guestCustomizationSection" 'Content-type:application/vnd.vmware.vcloud.guestCustomizationSection+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-custo.xml)
+	vmCusto=$(http --session=vcloud PUT "$vmUrl/guestCustomizationSection" 'Content-type:application/vnd.vmware.vcloud.guestCustomizationSection+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.5' < /tmp/$$-custo.xml)
 
-	taskUrl=$(echo $vmCusto | xml2 | grep Task/@href | cut -d = -f 2)
-	taskID=$(basename $taskUrl)
+	errorCode=$(echo $vmCusto | xml2 | grep @majorErrorCode | cut -d = -f 2)
+	if [[ $errorCode ]]; then
+		# Get the error message from XML response.
+		errorMessage=$(echo $vmCusto | xml2 | grep @message | cut -d = -f 2)
+		printf "\n$errorMessage\n"
+	else
+		# No error detected so far
+		taskUrl=$(echo $vmCusto | xml2 | grep Task/@href | cut -d = -f 2)
+		taskID=$(basename $taskUrl)
 
-	wait_task_running $taskID
+		wait_task_running $taskID
 
-	rm -f /tmp/$$-custo /tmp/$$-new-custo /tmp/$$-custo.xml
-	printf "\nDone.\n"
+		rm -f /tmp/$$-custo /tmp/$$-new-custo /tmp/$$-custo.xml
+		printf "\nDone.\n"
+	fi
 }
 
 function get_vm_custo () {
@@ -293,8 +312,9 @@ function get_vapp_list () {
 		if [ $1=="-a" ]; then
 			for vapp in $(get_vapp_list)
 			do
-				vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vapp)")
-				vappName=$vapp
+				vappNameClean=$(echo $vapp | sed -e "s/ /%20/g")
+				vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vappNameClean)")
+				vappName="$vapp"
 				vappCPU=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "numberOfCpus=" | cut -d = -f 2)
 				vappMEM=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "memoryAllocationMB=" | cut -d = -f 2)
 				vappDISK=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "storageKB=" | cut -d = -f 2)
@@ -340,6 +360,7 @@ function get_all_vapps_features () {
 		vappMEM=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "memoryAllocationMB=" | cut -d = -f 2)
 		vappDISK=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "storageKB=" | cut -d = -f 2)
 		vappUrl=$(echo $vappXMLData  | xml2 | grep VAppRecord | grep "@href=" | cut -d = -f 2)
+		vappVhVersion=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "lowestHardwareVersionInVApp=" | cut -d = -f 2)
 
 		vappXMLData=$(http --session=vcloud GET "$vappUrl")
 		vappIpAddress=$(echo $vappXMLData | xml2 | grep IpAddress= | cut -d = -f 2 | head -1)
@@ -348,7 +369,7 @@ function get_all_vapps_features () {
 		vappDesc=$(echo $vappXMLData | xml2 | grep VApp/Description= | cut -d = -f 2 )
 		vappTools=$(echo $vappXMLData | xml2 | grep VMWareTools | cut -d = -f 2 )
 
-		echo "$vappName,$vappCPU,$vappMEM,$vappDISK,$vappIpAddress,$vappNetName,$vappVDCName,$vappOSName,\"$vappDesc\",$vappTools"
+		echo "$vappName,$vappCPU,$vappMEM,$vappDISK,$vappIpAddress,$vappNetName,$vappVDCName,$vappOSName,\"$vappDesc\",$vappTools,$vappVhVersion"
 	done
 }
 
@@ -438,7 +459,11 @@ function get_template_info () {
     # $1: template Name
 	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
-	http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&filter=(name==$1)" | xml2 | grep VAppTemplateRecord | cut -d @ -f 2
+	tmplXML=$(http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&filter=(name==$1)")
+	echo $tmplXML | xml2 | grep VAppTemplateRecord | cut -d @ -f 2
+	tmplUrl=$(echo $tmplXML | xml2 | grep VAppTemplateRecord | cut -d @ -f 2 | grep "href=" | cut -d = -f 2)
+	vmUrl=$(http --session=vcloud "$tmplUrl" | xml2 | grep "Children/Vm/@href" | cut -d = -f2)
+	echo "ChildrenVM=$vmUrl"
 }
 
 function get_template_feature () {
@@ -447,8 +472,10 @@ function get_template_feature () {
 
     get_template_info $1 | egrep -v "vdcName|catalogName|taskDetails" > /tmp/$$.template-values
     source /tmp/$$.template-values
-    printf "%s,%s,%s,%s,%s\n" $vcdOrg $name $status $creationDate $storageKB
-    rm /tmp/$$.template-values
+		#echo $ChildrenVM
+		vmToolsVersion=$(http --session=vcloud GET "$ChildrenVM" | xml2 | grep version | cut -d = -f 2)
+    printf "%s,%s,%s,%s,%s,%s\n" $vcdOrg $name $status $creationDate $storageKB $vmToolsVersion
+    #rm /tmp/$$.template-values
 }
 
 function get_vdc_template_list () {
@@ -707,6 +734,14 @@ function get_network_config () {
 	echo "/NetworkConfigSection/NetworkConfig/Configuration/ParentNetwork/@href=$netUrl"
 	echo "/NetworkConfigSection/NetworkConfig/Configuration/ParentNetwork/@name=$1"
 	echo "/NetworkConfigSection/NetworkConfig/Configuration/FenceMode=bridged"
+}
+
+function get_network_allocated_ip () {
+	# Get list of allocated ip for a given network name
+	# $1: Network Name
+
+	netUrl=$(http --session=vcloud GET "$vcdUrl/query?type=orgVdcNetwork&filter=(name==$1)" | xml2 | grep "OrgVdcNetworkRecord/@href=" | cut -d = -f 2)
+	http --session=vcloud GET "$netUrl/allocatedAddresses" | xml2 | grep "IpAddress=" | cut -d = -f 2
 }
 
 function get_vapp_network () {
