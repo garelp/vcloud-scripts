@@ -169,7 +169,7 @@ function get_pool_info () {
 	# $1: Pool Name
 	# Return all information about the pool.
 	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	http --session=vcloud GET "$vcdUrl/query?type=orgVdc&filter=(name==$1)" | xml2 | grep OrgVdcRecord | cut -d @ -f 2
+	http --verify=no --session=vcloud GET "$vcdUrl/query?type=orgVdc&filter=(name==$1)" | xml2 | grep OrgVdcRecord | cut -d @ -f 2
 }
 
 function get_pool_info_csv () {
