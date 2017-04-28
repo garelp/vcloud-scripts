@@ -139,19 +139,23 @@ function set_vapp_desc () {
 	# $1: Vapp Name
 	# $2: Vapp description
 
-vappContent=$(cat <<EOF
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<VApp
-    xmlns="http://www.vmware.com/vcloud/v1.5"
-    name="$1">
-    <Description>$2</Description>
-</VApp>
-EOF)
+	#<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+	#<VApp
+	#    xmlns="http://www.vmware.com/vcloud/v1.5"
+	#    name="$1">
+	#    <Description>$2</Description>
+	#</VApp>
+
+	echo "/VApp/@xmlns=http://www.vmware.com/vcloud/v1.5" > /tmp/$$-vm-desc
+	echo "/VApp/@name=$1" >> /tmp/$$-vm-desc
+	echo "/VApp/Description=$2" >> /tmp/$$-vm-desc
+	cat /tmp/$$-vm-desc | 2xml > /tmp/$$-vm-desc.xml
 
 	echo "setting description to $1."
 	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
-	vmResult=$(echo $vappContent | http --session=vcloud PUT $vappUrl 'Content-type:application/vnd.vmware.vcloud.vApp+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
+	vmResult=$(http --session=vcloud PUT $vappUrl 'Content-type:application/vnd.vmware.vcloud.vApp+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-vm-desc.xml )
 	sleep 1
+	rm -f /tmp/$$-vm-desc /tmp/$$-vm-desc.xml
 }
 
 function get_vm_info () {
@@ -191,7 +195,7 @@ function get_pool_info_csv () {
 
 function get_pool_list () {
 	# Return the list of available pools.
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
 	if [[ $1 ]]; then
 		if [ $1=="-a" ]; then
@@ -202,7 +206,7 @@ function get_pool_list () {
 			done
 		fi
 	else
-		http --session=vcloud GET "$vcdUrl/query?type=orgVdc&pageSize=200" | xml2 | grep OrgVdcRecord | egrep 'name' | egrep -v 'Networking|Private Catalog' | cut -d = -f 2
+		http --verify=no --session=vcloud GET "$vcdUrl/query?type=orgVdc&pageSize=200" | xml2 | grep OrgVdcRecord | egrep 'name' | egrep -v 'Networking|Private Catalog' | cut -d = -f 2
 	fi
 }
 
@@ -382,24 +386,28 @@ function get_network_name () {
 function create_vapp_snaphot () {
 	# $1: Vapp Name
 
-	vappContent=$(cat <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<CreateSnapshotParams
-   xmlns="http://www.vmware.com/vcloud/v1.5"
-   name="Snapshot-$1">
-   <Description>Snapshot of Vapp $1</Description>
-</CreateSnapshotParams>
-EOF)
+	#<?xml version="1.0" encoding="UTF-8"?>
+	#<CreateSnapshotParams
+	#   xmlns="http://www.vmware.com/vcloud/v1.5"
+	#   name="Snapshot-$1">
+	#   <Description>Snapshot of Vapp $1</Description>
+	#</CreateSnapshotParams>
+
+	echo "/CreateSnapshotParams/@xmlns=http://www.vmware.com/vcloud/v1.5" > /tmp/$$-vm-net
+	echo "/CreateSnapshotParams/@name=Snapshot-$1" >> /tmp/$$-vm-net
+	echo "/CreateSnapshotParams/Description=Snapshot of Vapp $1" >> /tmp/$$-vm-net
+	cat /tmp/$$-vm-net | 2xml > /tmp/$$-vm-net.xml
 
 	echo -n "Creating snapshot for $1 ... "
 	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
-	vmResult=$(echo $vappContent | http --session=vcloud POST $vappUrl/action/createSnapshot 'Content-type:application/vnd.vmware.vcloud.createSnapshotParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
+	vmResult=$(http --session=vcloud POST $vappUrl/action/createSnapshot 'Content-type:application/vnd.vmware.vcloud.createSnapshotParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-vm-net.xml )
 
 	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 	taskID=$(basename $taskUrl)
 
 	wait_task_running $taskID
 	printf "\nDone.\n"
+	rm -f /tmp/$$-vm-net /tmp/$$-vm-net.xml
 }
 
 function get_vapp_snapshot () {
@@ -598,18 +606,23 @@ function clone_vapp2tmpl () {
 			vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 			vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
 
-			vappCaptureParam=$(cat <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<CaptureVAppParams
-   xmlns="http://www.vmware.com/vcloud/v1.5"
-   name="$1-clone">
-   <Description>Captured $1</Description>
-   <Source href="$vappUrl" />
-</CaptureVAppParams>
-EOF)
+			#<?xml version="1.0" encoding="UTF-8"?>
+			#<CaptureVAppParams
+			#   xmlns="http://www.vmware.com/vcloud/v1.5"
+			#   name="$1-clone">
+			#   <Description>Captured $1</Description>
+			#   <Source href="$vappUrl" />
+			#</CaptureVAppParams>
+
+			echo "/CaptureVAppParams/@xmlns=http://www.vmware.com/vcloud/v1.5" > /tmp/$$-vm-capture
+			echo "/CaptureVAppParams/@name=$1-clone" >> /tmp/$$-vm-capture
+			echo "/CaptureVAppParams/Description=Captured $1" >> /tmp/$$-vm-capture
+			echo "/CaptureVAppParams/Source/@href=$vappUrl" >> /tmp/$$-vm-capture
+			cat /tmp/$$-vm-capture | 2xml > /tmp/$$-vm-capture.xml
 
 			vcdCatalogUrl=$(http --session=vcloud GET "$vcdUrl/catalogs/query?filter=(name==$vcdCatalog)" | xml2 | grep CatalogRecord/@href | cut -d = -f2)
-			vmResult=$(echo $vappCaptureParam | http --session=vcloud POST $vcdCatalogUrl/action/captureVApp 'Content-type:application/vnd.vmware.vcloud.captureVAppParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
+			vmResult=$(http --session=vcloud POST $vcdCatalogUrl/action/captureVApp 'Content-type:application/vnd.vmware.vcloud.captureVAppParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-vm-capture.xml )
+			rm -f /tmp/$$-vm-capture /tmp/$$-vm-capture.xml
 
 			taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 			taskID=$(basename $taskUrl)
@@ -646,25 +659,34 @@ function deploy_tmpl2vapp () {
 			tmplUrl=$(get_template_info $1 | grep href= | cut -d = -f2)
 			poolUrl=$(get_pool_info "$2" | grep href= | cut -d = -f2 )
 
-			VAppTemplateParams=$(cat <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<InstantiateVAppTemplateParams
-   xmlns="http://www.vmware.com/vcloud/v1.5"
-   name="$3"
-   deploy="false"
-   powerOn="false"
-   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xmlns:ovf="http://schemas.dmtf.org/ovf/envelope/1">
-   <Description>$4</Description>
-   <Source
-      href="$tmplUrl" />
-</InstantiateVAppTemplateParams>
-EOF)
+			#<?xml version="1.0" encoding="UTF-8"?>
+			#<InstantiateVAppTemplateParams
+			#   xmlns="http://www.vmware.com/vcloud/v1.5"
+			#   name="$3"
+			#   deploy="false"
+			#   powerOn="false"
+			#   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			#   xmlns:ovf="http://schemas.dmtf.org/ovf/envelope/1">
+			#   <Description>$4</Description>
+			#   <Source
+			#      href="$tmplUrl" />
+			#</InstantiateVAppTemplateParams>
 
-			vmResult=$(echo $VAppTemplateParams | http --session=vcloud POST $poolUrl/action/instantiateVAppTemplate 'Content-type:application/vnd.vmware.vcloud.instantiateVAppTemplateParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
+			echo "/InstantiateVAppTemplateParams/@xmlns=http://www.vmware.com/vcloud/v1.5" > /tmp/$$-vm-param
+			echo "/InstantiateVAppTemplateParams/@name=$3" >> /tmp/$$-vm-param
+			echo "/InstantiateVAppTemplateParams/@deploy=false" >> /tmp/$$-vm-param
+			echo "/InstantiateVAppTemplateParams/@powerOn=false" >> /tmp/$$-vm-param
+			echo "/InstantiateVAppTemplateParams/@xmlns:xsi=http://www.w3.org/2001/XMLSchema-instance" >> /tmp/$$-vm-param
+			echo "/InstantiateVAppTemplateParams/@xmlns:ovf=http://schemas.dmtf.org/ovf/envelope/1" >> /tmp/$$-vm-param
+			echo "/InstantiateVAppTemplateParams/Description=$4" >> /tmp/$$-vm-param
+			echo "/InstantiateVAppTemplateParams/Source/@href=$tmplUrl" >> /tmp/$$-vm-param
+			cat /tmp/$$-vm-param | 2xml > /tmp/$$-vm-param.xml
+
+			vmResult=$(http --session=vcloud POST $poolUrl/action/instantiateVAppTemplate 'Content-type:application/vnd.vmware.vcloud.instantiateVAppTemplateParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-vm-param.xml )
 
 			taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 			taskID=$(basename $taskUrl)
+			rm -f /tmp/$$-vm-param /tmp/$$-vm-param.xml
 
 			if [ -z "$5" ]
 			then
