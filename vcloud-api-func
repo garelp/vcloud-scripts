@@ -5,16 +5,16 @@
 function check_vm_exists () {
 	# Check if a VM Exist in the current organisation
 	# $1: VM NAme
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	vmStatus=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$1)" | xml2 | grep total | cut -d = -f 2)
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vmStatus=$(http --verify=no --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$1)" | xml2 | grep total | cut -d = -f 2)
 	return $vmStatus
 }
 
 function check_tmpl_exists () {
 	# Check if a Template Exist in the current Catalog
 	# $1: Template Name to check
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	vmStatus=$(http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&filter=(name==$1)" | xml2 | grep total | cut -d = -f 2)
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vmStatus=$(http --verify=no --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&filter=(name==$1)" | xml2 | grep total | cut -d = -f 2)
 	return $vmStatus
 }
 
@@ -67,8 +67,8 @@ function get_children_vm_name () {
 function set_vm_custo () {
 	# $1: vmName $2: GuestCusto $3: ChangeSid $4: ChangeAdminPass $5: vAppName $6: AdminPassword
 	# value: on/off
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1;containerName==$5)" | xml2 | egrep  "vm-" | grep -v "vAppTemplate" | grep href | cut -d = -f 2)
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vmUrl=$(http --verify=no --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1;containerName==$5)" | xml2 | egrep  "vm-" | grep -v "vAppTemplate" | grep href | cut -d = -f 2)
 
 	http --session=vcloud GET "$vmUrl/guestCustomizationSection" | xml2 > /tmp/$$-custo
 
@@ -100,7 +100,7 @@ function set_vm_custo () {
 
 	echo -n "Setting customization for $1... "
 
-	vmCusto=$(http --session=vcloud PUT "$vmUrl/guestCustomizationSection" 'Content-type:application/vnd.vmware.vcloud.guestCustomizationSection+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.5' < /tmp/$$-custo.xml)
+	vmCusto=$(http --verify=no --session=vcloud PUT "$vmUrl/guestCustomizationSection" 'Content-type:application/vnd.vmware.vcloud.guestCustomizationSection+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.5' < /tmp/$$-custo.xml)
 
 	errorCode=$(echo $vmCusto | xml2 | grep @majorErrorCode | cut -d = -f 2)
 	if [[ $errorCode ]]; then
@@ -123,14 +123,14 @@ function get_vm_custo () {
   # $1: vmName
 	# $2: vAppNAme
 	# returns VM customizaiont parameters
-    vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-    vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1;containerName==$2)" | xml2 | egrep  "vm-" | grep -v "vAppTemplate" | grep href | cut -d = -f 2)
+    vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+    vmUrl=$(http --verify=no --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1;containerName==$2)" | xml2 | egrep  "vm-" | grep -v "vAppTemplate" | grep href | cut -d = -f 2)
     http --session=vcloud GET "$vmUrl/guestCustomizationSection" | xml2
 }
 
 function get_vapp_info () {
 	# $1: Vapp Name
-    vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+    vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
     http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass GET "$vcdUrl/vApps/query?filter=(name==$1)" | xml2 | grep VAppRecord | cut -d @ -f 2
 
 }
@@ -153,30 +153,30 @@ function set_vapp_desc () {
 
 	echo "setting description to $1."
 	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
-	vmResult=$(http --session=vcloud PUT $vappUrl 'Content-type:application/vnd.vmware.vcloud.vApp+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-vm-desc.xml )
+	vmResult=$(http --verify=no --session=vcloud PUT $vappUrl 'Content-type:application/vnd.vmware.vcloud.vApp+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-vm-desc.xml )
 	sleep 1
 	rm -f /tmp/$$-vm-desc /tmp/$$-vm-desc.xml
 }
 
 function get_vm_info () {
     # $1: vmName
-    vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-    vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1)" | xml2 | grep VMRecord | grep href | cut -d = -f 2)
+    vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+    vmUrl=$(http --verify=no --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1)" | xml2 | grep VMRecord | grep href | cut -d = -f 2)
     http --session=vcloud GET "$vmUrl/" | xml2
 }
 
 function get_pool_info () {
 	# $1: Pool Name
 	# Return all information about the pool.
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 	http --session=vcloud GET "$vcdUrl/query?type=orgVdc&filter=(name==$1)" | xml2 | grep OrgVdcRecord | cut -d @ -f 2
 }
 
 function get_pool_info_csv () {
 	# $1: Pool Name
 	# Return all information about the pool in csv format.
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	poolData=$(http --session=vcloud GET "$vcdUrl/query?type=orgVdc&filter=(name==$1)")
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	poolData=$(http --verify=no --session=vcloud GET "$vcdUrl/query?type=orgVdc&filter=(name==$1)")
 
 	poolName=$1
 	storageUsedMB=$(echo $poolData | xml2 | grep "@storageUsedMB" | cut -d = -f 2)
@@ -230,17 +230,17 @@ function set_vca_vdc () {
 function get_task_info () {
 	#$1: Task ID
 	# return some task info based on the task ID.
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	xmlTask=$(http --session=vcloud GET "$vcdUrl/task/$1")
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	xmlTask=$(http --verify=no --session=vcloud GET "$vcdUrl/task/$1")
 	echo $xmlTask | xml2 | egrep 'Task\/@status|Task\/@operation|Owner\/@name|Task/@endTime|Task/@startTime' | cut -d @ -f 2
 	taskProgress=$(echo $xmlTask | xml2 | egrep 'Progress' | cut -d = -f2)
 	echo "Progress=$taskProgress"
 }
 
 function display_tasks_list () {
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
-	for task_url in $(http --session=vcloud GET "$vcdUrl/query?type=task" | xml2 | grep "TaskRecord/@href=" | cut -d = -f 2)
+	for task_url in $(http --verify=no --session=vcloud GET "$vcdUrl/query?type=task" | xml2 | grep "TaskRecord/@href=" | cut -d = -f 2)
 	do
 		task_id=$(basename $task_url)
 		for taskLine in $(get_task_info $task_id)
@@ -268,9 +268,9 @@ function display_tasks_list () {
 function display_running_tasks () {
 	# Show all running tasks for the current Org.
 	#
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
-	for task_url in $(http --session=vcloud GET "$vcdUrl/query?type=task&filter=(status==running)" | xml2 | grep "TaskRecord/@href=" | cut -d = -f 2)
+	for task_url in $(http --verify=no --session=vcloud GET "$vcdUrl/query?type=task&filter=(status==running)" | xml2 | grep "TaskRecord/@href=" | cut -d = -f 2)
 	do
 		task_id=$(basename $task_url)
 		for taskLine in $(get_task_info $task_id)
@@ -303,21 +303,21 @@ function get_vms_url () {
 
 function get_vms_list () {
 	# Return all vm available in the current VROOM.
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-	http --session=vcloud GET "$vcdUrl/query?type=vm&pageSize=200&fields=name&filter=(isVAppTemplate==false)" | xml2 | egrep "VMRecord/@name" | cut -d = -f 2
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	http --verify=no --session=vcloud GET "$vcdUrl/query?type=vm&pageSize=200&fields=name&filter=(isVAppTemplate==false)" | xml2 | egrep "VMRecord/@name" | cut -d = -f 2
 }
 
 function get_vapp_list () {
 	# Return list of vApps for the current vRoom.
 	# $1 = -a : displays more info about each vapp.
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
 	if [[ $1 ]]; then
 		if [ $1=="-a" ]; then
 			for vapp in $(get_vapp_list)
 			do
 				vappNameClean=$(echo $vapp | sed -e "s/ /%20/g")
-				vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vappNameClean)")
+				vappXMLData=$(http --verify=no --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vappNameClean)")
 				vappName="$vapp"
 				vappCPU=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "numberOfCpus=" | cut -d = -f 2)
 				vappMEM=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "memoryAllocationMB=" | cut -d = -f 2)
@@ -326,7 +326,7 @@ function get_vapp_list () {
 				vappStatus=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "@status=" | cut -d = -f 2)
 				vappDeployed=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "@isDeployed=" | cut -d = -f 2)
 
-				vappXMLData=$(http --session=vcloud GET "$vappUrl")
+				vappXMLData=$(http --verify=no --session=vcloud GET "$vappUrl")
 				vappIpAddress=$(echo $vappXMLData | xml2 | grep IpAddress= | cut -d = -f 2 | head -1)
 				vappDesc=$(echo $vappXMLData | xml2 | grep VApp/Description= | cut -d = -f 2 )
 				vappTools=$(echo $vappXMLData | xml2 | grep VMWareTools | cut -d = -f 2 )
@@ -335,16 +335,16 @@ function get_vapp_list () {
 			done
 		fi
 	else
-		vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?pageSize=128")
+		vappXMLData=$(http --verify=no --session=vcloud GET "$vcdUrl/vApps/query?pageSize=128")
 		vappTotal=$(echo $vappXMLData | xml2 | grep @total | cut -d = -f 2)
 		echo $vappXMLData | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
 
 		if [ $vappTotal -gt 128 ]; then
-			vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?page=2&pageSize=128")
+			vappXMLData=$(http --verify=no --session=vcloud GET "$vcdUrl/vApps/query?page=2&pageSize=128")
 			echo $vappXMLData | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
 		fi
 		if [ $vappTotal -gt 256 ]; then
-			vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?page=3&pageSize=128")
+			vappXMLData=$(http --verify=no --session=vcloud GET "$vcdUrl/vApps/query?page=3&pageSize=128")
 			echo $vappXMLData | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
 		fi
 
@@ -353,11 +353,11 @@ function get_vapp_list () {
 
 function get_all_vapps_features () {
 	# Return in CSV format the list of vapp features for the current vRoom.
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
 	for vapp in $(get_vapp_list)
 	do
-		vappXMLData=$(http --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vapp)")
+		vappXMLData=$(http --verify=no --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vapp)")
 		vappName=$vapp
 		vappVDCName=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "vdcName=" | cut -d = -f 2)
 		vappCPU=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "numberOfCpus=" | cut -d = -f 2)
@@ -366,7 +366,7 @@ function get_all_vapps_features () {
 		vappUrl=$(echo $vappXMLData  | xml2 | grep VAppRecord | grep "@href=" | cut -d = -f 2)
 		vappVhVersion=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "lowestHardwareVersionInVApp=" | cut -d = -f 2)
 
-		vappXMLData=$(http --session=vcloud GET "$vappUrl")
+		vappXMLData=$(http --verify=no --session=vcloud GET "$vappUrl")
 		vappIpAddress=$(echo $vappXMLData | xml2 | grep IpAddress= | cut -d = -f 2 | head -1)
 		vappNetName=$(echo $vappXMLData | xml2 | grep @network= | cut -d = -f 2 | head -1)
 		vappOSName=$(echo $vappXMLData | xml2 | grep OperatingSystemSection/ovf:Description= | cut -d = -f 2)
@@ -378,9 +378,9 @@ function get_all_vapps_features () {
 }
 
 function get_network_name () {
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
-	http --session=vcloud GET "$vcdUrl/query?type=orgVdcNetwork" | xml2 | grep OrgVdcNetworkRecord | grep @name | cut -d = -f 2
+	http --verify=no --session=vcloud GET "$vcdUrl/query?type=orgVdcNetwork" | xml2 | grep OrgVdcNetworkRecord | grep @name | cut -d = -f 2
 }
 
 function create_vapp_snaphot () {
@@ -400,7 +400,7 @@ function create_vapp_snaphot () {
 
 	echo -n "Creating snapshot for $1 ... "
 	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
-	vmResult=$(http --session=vcloud POST $vappUrl/action/createSnapshot 'Content-type:application/vnd.vmware.vcloud.createSnapshotParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-vm-net.xml )
+	vmResult=$(http --verify=no --session=vcloud POST $vappUrl/action/createSnapshot 'Content-type:application/vnd.vmware.vcloud.createSnapshotParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-vm-net.xml )
 
 	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 	taskID=$(basename $taskUrl)
@@ -415,7 +415,7 @@ function get_vapp_snapshot () {
 	# return Snapshot info for the vapp.
 
 	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
-	vmResult=$(http --session=vcloud GET $vappUrl/snapshotSection)
+	vmResult=$(http --verify=no --session=vcloud GET $vappUrl/snapshotSection)
 	snapSize=$( echo $vmResult | xml2 | grep @size | cut -d = -f 2 )
 	snapPowerState=$( echo $vmResult | xml2 | grep @poweredOn | cut -d = -f 2 )
 	snapDate=$( echo $vmResult | xml2 | grep @created | cut -d = -f 2 )
@@ -429,7 +429,7 @@ function revert_vapp_snapshot () {
 
 	echo -n "Reverting $1 to current snapshot ... "
 	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
-	vmResult=$(http --session=vcloud POST $vappUrl/action/revertToCurrentSnapshot)
+	vmResult=$(http --verify=no --session=vcloud POST $vappUrl/action/revertToCurrentSnapshot)
 
 	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 	taskID=$(basename $taskUrl)
@@ -445,7 +445,7 @@ function remove_vapp_snapshot () {
 
 	echo -n "Removing $1 current snapshot ... "
 	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
-	vmResult=$(http --session=vcloud POST $vappUrl/action/removeAllSnapshots)
+	vmResult=$(http --verify=no --session=vcloud POST $vappUrl/action/removeAllSnapshots)
 
 	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 	taskID=$(basename $taskUrl)
@@ -458,19 +458,19 @@ function remove_vapp_snapshot () {
 function get_template_list () {
 	# Return the list of template name from the private catalog
 
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
-	http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&pageSize=100" | xml2 | grep VAppTemplateRecord/@name | cut -d = -f 2 | sort
+	http --verify=no --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&pageSize=100" | xml2 | grep VAppTemplateRecord/@name | cut -d = -f 2 | sort
 }
 
 function get_template_info () {
     # $1: template Name
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
-	tmplXML=$(http --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&filter=(name==$1)")
+	tmplXML=$(http --verify=no --session=vcloud GET "$vcdUrl/query?type=vAppTemplate&filter=(name==$1)")
 	echo $tmplXML | xml2 | grep VAppTemplateRecord | cut -d @ -f 2
 	tmplUrl=$(echo $tmplXML | xml2 | grep VAppTemplateRecord | cut -d @ -f 2 | grep "href=" | cut -d = -f 2)
-	vmUrl=$(http --session=vcloud "$tmplUrl" | xml2 | grep "Children/Vm/@href" | cut -d = -f2)
+	vmUrl=$(http --verify=no --session=vcloud "$tmplUrl" | xml2 | grep "Children/Vm/@href" | cut -d = -f2)
 	echo "ChildrenVM=$vmUrl"
 }
 
@@ -481,7 +481,7 @@ function get_template_feature () {
     get_template_info $1 | egrep -v "vdcName|catalogName|taskDetails" > /tmp/$$.template-values
     source /tmp/$$.template-values
 		#echo $ChildrenVM
-		vmToolsVersion=$(http --session=vcloud GET "$ChildrenVM" | xml2 | grep version | cut -d = -f 2)
+		vmToolsVersion=$(http --verify=no --session=vcloud GET "$ChildrenVM" | xml2 | grep version | cut -d = -f 2)
     printf "%s,%s,%s,%s,%s,%s\n" $vcdOrg $name $status $creationDate $storageKB $vmToolsVersion
     #rm /tmp/$$.template-values
 }
@@ -521,13 +521,13 @@ function get_vapp_deploy () {
 function power_on_vapp () {
 	# $1: Vapp Name.
 	#
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
 	vappPowerState=$(get_vapp_power $1)
 	if [ $vappPowerState == "POWERED_OFF" ]
 	then
 		vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
-		vmResult=$(http --session=vcloud POST $vappUrl/power/action/powerOn)
+		vmResult=$(http --verify=no --session=vcloud POST $vappUrl/power/action/powerOn)
 
 		taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 		taskID=$(basename $taskUrl)
@@ -543,7 +543,7 @@ function power_off_vapp () {
 	#
 	vcdUndeployAction='<UndeployVAppParams xmlns="http://www.vmware.com/vcloud/v1.5"><UndeployPowerAction>powerOff</UndeployPowerAction></UndeployVAppParams>'
 
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
 	vappPowerState=$(get_vapp_power $1)
 	vappDeployState=$(get_vapp_deploy $1)
@@ -551,7 +551,7 @@ function power_off_vapp () {
 	if [ $vappPowerState == "POWERED_ON" ]
 	then
 		vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
-		vmResult=$(http --session=vcloud POST $vappUrl/power/action/powerOff)
+		vmResult=$(http --verify=no --session=vcloud POST $vappUrl/power/action/powerOff)
 
 		taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 		taskID=$(basename $taskUrl)
@@ -562,7 +562,7 @@ function power_off_vapp () {
 
 	if [ $vappDeployState == "true" ]
 	then
-		vmResult=$(echo $vcdUndeployAction | http --session=vcloud POST $vappUrl/action/undeploy 'Content-type:application/vnd.vmware.vcloud.undeployVAppParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
+		vmResult=$(echo $vcdUndeployAction | http --verify=no --session=vcloud POST $vappUrl/action/undeploy 'Content-type:application/vnd.vmware.vcloud.undeployVAppParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1')
 
 		taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 		taskID=$(basename $taskUrl)
@@ -576,13 +576,13 @@ function shutdown_vapp () {
 	# Perform a clean shutdown of a Vapp. Need Vmware Tools.
 	# $1: Vapp Name.
 	#
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
 	vappPowerState=$(get_vapp_power $1)
 	if [ $vappPowerState == "POWERED_ON" ]
 	then
 		vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
-		vmResult=$(http --session=vcloud POST $vappUrl/power/action/shutdown)
+		vmResult=$(http --verify=no --session=vcloud POST $vappUrl/power/action/shutdown)
 
 		taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 		taskID=$(basename $taskUrl)
@@ -603,7 +603,7 @@ function clone_vapp2tmpl () {
 		check_tmpl_exists "$1-clone"
 		if [ $? -eq 0 ]
 		then
-			vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+			vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 			vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
 
 			#<?xml version="1.0" encoding="UTF-8"?>
@@ -620,8 +620,8 @@ function clone_vapp2tmpl () {
 			echo "/CaptureVAppParams/Source/@href=$vappUrl" >> /tmp/$$-vm-capture
 			cat /tmp/$$-vm-capture | 2xml > /tmp/$$-vm-capture.xml
 
-			vcdCatalogUrl=$(http --session=vcloud GET "$vcdUrl/catalogs/query?filter=(name==$vcdCatalog)" | xml2 | grep CatalogRecord/@href | cut -d = -f2)
-			vmResult=$(http --session=vcloud POST $vcdCatalogUrl/action/captureVApp 'Content-type:application/vnd.vmware.vcloud.captureVAppParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-vm-capture.xml )
+			vcdCatalogUrl=$(http --verify=no --session=vcloud GET "$vcdUrl/catalogs/query?filter=(name==$vcdCatalog)" | xml2 | grep CatalogRecord/@href | cut -d = -f2)
+			vmResult=$(http --verify=no --session=vcloud POST $vcdCatalogUrl/action/captureVApp 'Content-type:application/vnd.vmware.vcloud.captureVAppParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-vm-capture.xml )
 			rm -f /tmp/$$-vm-capture /tmp/$$-vm-capture.xml
 
 			taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
@@ -654,7 +654,7 @@ function deploy_tmpl2vapp () {
 		check_vm_exists "$3"
 		if [ $? -eq 0 ]
 		then
-			vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+			vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
 			tmplUrl=$(get_template_info $1 | grep href= | cut -d = -f2)
 			poolUrl=$(get_pool_info "$2" | grep href= | cut -d = -f2 )
@@ -682,7 +682,7 @@ function deploy_tmpl2vapp () {
 			echo "/InstantiateVAppTemplateParams/Source/@href=$tmplUrl" >> /tmp/$$-vm-param
 			cat /tmp/$$-vm-param | 2xml > /tmp/$$-vm-param.xml
 
-			vmResult=$(http --session=vcloud POST $poolUrl/action/instantiateVAppTemplate 'Content-type:application/vnd.vmware.vcloud.instantiateVAppTemplateParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-vm-param.xml )
+			vmResult=$(http --verify=no --session=vcloud POST $poolUrl/action/instantiateVAppTemplate 'Content-type:application/vnd.vmware.vcloud.instantiateVAppTemplateParams+xml; charset=ISO-8859-1' 'Accept:application/*+xml;version=5.1' < /tmp/$$-vm-param.xml )
 
 			taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 			taskID=$(basename $taskUrl)
@@ -706,7 +706,7 @@ function delete_vapp () {
 	# $1: vapp name.
 	#
 
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
 	vappPowerState=$(get_vapp_power $1)
 	if [ $vappPowerState == "POWERED_ON" ]
@@ -723,7 +723,7 @@ function delete_vapp () {
 
 	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
 
-	vmResult=$(http --session=vcloud DELETE $vappUrl)
+	vmResult=$(http --verify=no --session=vcloud DELETE $vappUrl)
 	taskUrl=$(echo $vmResult | xml2 | grep Task/@href | cut -d = -f 2)
 	taskID=$(basename $taskUrl)
 
@@ -734,10 +734,10 @@ function delete_vapp () {
 function delete_template () {
 	# Delete a template from Private catalog.
 	# $1: vappTemplate Name.
-	vcdLogin=$(http --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
+	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
 
 	tmplUrl=$(get_template_info $1 | grep href | cut -d = -f2)
-	xmlTask=$(http --session=vcloud DELETE $tmplUrl)
+	xmlTask=$(http --verify=no --session=vcloud DELETE $tmplUrl)
 	taskUrl=$(echo $xmlTask | xml2 | grep Task/@href | cut -d = -f 2)
 	taskID=$(basename $taskUrl)
 
@@ -749,9 +749,9 @@ function get_network_config () {
 	# get Network information surch as ip range.
 	# $1: Network name
 
-	netUrl=$(http --session=vcloud GET "$vcdUrl/query?type=orgVdcNetwork&filter=(name==$1)" | xml2 | grep "OrgVdcNetworkRecord/@href=" | cut -d = -f 2)
+	netUrl=$(http --verify=no --session=vcloud GET "$vcdUrl/query?type=orgVdcNetwork&filter=(name==$1)" | xml2 | grep "OrgVdcNetworkRecord/@href=" | cut -d = -f 2)
 	echo "/NetworkConfigSection/NetworkConfig/@networkName=$1"
-	http --session=vcloud $netUrl | xml2 | grep "Configuration/IpScopes" | sed -e "s/OrgVdcNetwork/NetworkConfigSection\/NetworkConfig/g"
+	http --verify=no --session=vcloud $netUrl | xml2 | grep "Configuration/IpScopes" | sed -e "s/OrgVdcNetwork/NetworkConfigSection\/NetworkConfig/g"
 	echo "/NetworkConfigSection/NetworkConfig/Configuration/ParentNetwork/@type=application/vnd.vmware.vcloud.network+xml"
 	echo "/NetworkConfigSection/NetworkConfig/Configuration/ParentNetwork/@href=$netUrl"
 	echo "/NetworkConfigSection/NetworkConfig/Configuration/ParentNetwork/@name=$1"
@@ -762,8 +762,8 @@ function get_network_allocated_ip () {
 	# Get list of allocated ip for a given network name
 	# $1: Network Name
 
-	netUrl=$(http --session=vcloud GET "$vcdUrl/query?type=orgVdcNetwork&filter=(name==$1)" | xml2 | grep "OrgVdcNetworkRecord/@href=" | cut -d = -f 2)
-	http --session=vcloud GET "$netUrl/allocatedAddresses" | xml2 | grep "IpAddress=" | cut -d = -f 2
+	netUrl=$(http --verify=no --session=vcloud GET "$vcdUrl/query?type=orgVdcNetwork&filter=(name==$1)" | xml2 | grep "OrgVdcNetworkRecord/@href=" | cut -d = -f 2)
+	http --verify=no --session=vcloud GET "$netUrl/allocatedAddresses" | xml2 | grep "IpAddress=" | cut -d = -f 2
 }
 
 function get_vapp_network () {
@@ -771,7 +771,7 @@ function get_vapp_network () {
 	# $1: Vapp Name
 
 	vappUrl=$(get_vapp_info $1 | grep href | cut -d = -f 2)
-	http --session=vcloud $vappUrl/networkConfigSection/ | xml2
+	http --verify=no --session=vcloud $vappUrl/networkConfigSection/ | xml2
 }
 
 function attach_vapp_network () {
@@ -786,7 +786,7 @@ function attach_vapp_network () {
 	get_network_config "$2" >> /tmp/$$-vapp-net
 	cat /tmp/$$-vapp-net | 2xml > /tmp/$$-vapp-net-xml
 
-	xmlTask=$(http --session=vcloud PUT "$vappUrl/networkConfigSection/" 'Content-type: application/vnd.vmware.vcloud.networkConfigSection+xml' < /tmp/$$-vapp-net-xml)
+	xmlTask=$(http --verify=no --session=vcloud PUT "$vappUrl/networkConfigSection/" 'Content-type: application/vnd.vmware.vcloud.networkConfigSection+xml' < /tmp/$$-vapp-net-xml)
 	taskUrl=$(echo $xmlTask | xml2 | grep Task/@href | cut -d = -f 2)
 	taskID=$(basename $taskUrl)
 
@@ -805,7 +805,7 @@ function attach_vm_network () {
 	# $2: Network name
 	# $3: ip address
 
-	vmUrl=$(http --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1;isVAppTemplate==false)" | xml2 | grep "VMRecord/@href" | cut -d = -f 2)
+	vmUrl=$(http --verify=no --session=vcloud GET "$vcdUrl/query?type=vm&filter=(name==$1;isVAppTemplate==false)" | xml2 | grep "VMRecord/@href" | cut -d = -f 2)
 	http --session=vcloud GET "$vmUrl/networkConnectionSection/" | xml2 | grep -v "/NetworkConnectionSection/Link/" > /tmp/$$-vm-net
 	echo "/NetworkConnectionSection/NetworkConnection" >> /tmp/$$-vm-net
 	echo "/NetworkConnectionSection/NetworkConnection/@needsCustomization=false" >> /tmp/$$-vm-net
@@ -817,7 +817,7 @@ function attach_vm_network () {
 
 	cat /tmp/$$-vm-net | 2xml > /tmp/$$-vm-net-xml
 
-	xmlTask=$(http --session=vcloud PUT "$vmUrl/networkConnectionSection/" 'Content-type: application/vnd.vmware.vcloud.networkConnectionSection+xml' < /tmp/$$-vm-net-xml)
+	xmlTask=$(http --verify=no --session=vcloud PUT "$vmUrl/networkConnectionSection/" 'Content-type: application/vnd.vmware.vcloud.networkConnectionSection+xml' < /tmp/$$-vm-net-xml)
 	taskUrl=$(echo $xmlTask | xml2 | grep Task/@href | cut -d = -f 2)
 	taskID=$(basename $taskUrl)
 
