@@ -347,6 +347,14 @@ function get_vapp_list () {
 			vappXMLData=$(http --verify=no --session=vcloud GET "$vcdUrl/vApps/query?page=3&pageSize=128")
 			echo $vappXMLData | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
 		fi
+		if [ $vappTotal -gt 384 ]; then
+			vappXMLData=$(http --verify=no --session=vcloud GET "$vcdUrl/vApps/query?page=4&pageSize=128")
+			echo $vappXMLData | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
+		fi
+		if [ $vappTotal -gt 512 ]; then
+			vappXMLData=$(http --verify=no --session=vcloud GET "$vcdUrl/vApps/query?page=5&pageSize=128")
+			echo $vappXMLData | xml2 | grep "VAppRecord/@name=" | cut -d = -f 2 | sort
+		fi
 
 	fi
 }
