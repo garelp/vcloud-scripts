@@ -314,9 +314,11 @@ function get_vapp_list () {
 
 	if [[ $1 ]]; then
 		if [ $1=="-a" ]; then
+			SAVEIFS=$IFS
+			IFS=$(echo -en "\n\b")
 			for vapp in $(get_vapp_list)
 			do
-				vappNameClean=$(echo $vapp | sed -e "s/ /%20/g")
+				vappNameClean=$(echo -n $vapp | sed -e "s/ /%20/g")
 				vappXMLData=$(http --verify=no --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vappNameClean)")
 				vappName="$vapp"
 				vappCPU=$(echo $vappXMLData | xml2 | grep VAppRecord | grep "numberOfCpus=" | cut -d = -f 2)
@@ -333,6 +335,7 @@ function get_vapp_list () {
 
 				echo "$vappName,$vappCPU,$vappMEM,$vappStatus,$vappDeployed,$vappDISK,$vappIpAddress,\"$vappDesc\",$vappTools"
 			done
+			IFS=$SAVEIFS
 		fi
 	else
 		vappXMLData=$(http --verify=no --session=vcloud GET "$vcdUrl/vApps/query?pageSize=128")
