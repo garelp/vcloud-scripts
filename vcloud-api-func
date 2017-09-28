@@ -365,7 +365,8 @@ function get_vapp_list () {
 function get_all_vapps_features () {
 	# Return in CSV format the list of vapp features for the current vRoom.
 	vcdLogin=$(http --verify=no --session=vcloud -a $vcdUser@$vcdOrg:$vcdPass POST $vcdUrl/sessions 'Accept:application/*+xml;version=5.1')
-
+	SAVEIFS=$IFS
+	IFS=$(echo -en "\n\b")
 	for vapp in $(get_vapp_list)
 	do
 		vappXMLData=$(http --verify=no --session=vcloud GET "$vcdUrl/vApps/query?filter=(name==$vapp)")
@@ -386,6 +387,7 @@ function get_all_vapps_features () {
 
 		echo "$vappName,$vappCPU,$vappMEM,$vappDISK,$vappIpAddress,$vappNetName,$vappVDCName,$vappOSName,\"$vappDesc\",$vappTools,$vappVhVersion"
 	done
+	IFS=$SAVEIFS
 }
 
 function get_network_name () {
